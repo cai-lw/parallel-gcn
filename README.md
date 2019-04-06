@@ -14,7 +14,7 @@ See [project pages](https://cai-lw.github.com/parallel-gcn/) for details.
 python3 -m pip install --user tensorflow scipy networkx
 git clone https://github.com/tkipf/gcn.git
 cd gcn
-python3 setup.py install
+python3 setup.py install --user
 cd gcn
 python3 train.py
 ```
