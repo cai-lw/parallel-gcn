@@ -77,10 +77,10 @@ def load_data(dataset_str):
 
     n_nodes = labels.shape[0]
     dump_svmlight_file(features, labels, 'data/{}.svmlight'.format(dataset_str), multilabel=True)
-    with open('data/{}.graph'.format(dataset_str), 'w') as f:
+    with open('data/{}.graph'.format(dataset_str), 'w', newline='\n') as f:
         for i in range(n_nodes):
-            print(len(graph[i]), *graph[i], file=f)
-    with open('data/{}.split'.format(dataset_str), 'w') as f:
+            print(*graph[i], file=f)
+    with open('data/{}.split'.format(dataset_str), 'w', newline='\n') as f:
         for i in range(n_nodes):
             split = 0
             if i in idx_train:

@@ -1,1 +1,0 @@
-# Parallel GCN: Project Proposal
