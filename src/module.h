@@ -4,8 +4,9 @@
 
 class Module {
 public:
-    virtual void forward(bool);
-    virtual void backward();
+    virtual void forward(bool) = 0;
+    virtual void backward() = 0;
+    virtual ~Module() {};
 };
 
 class Matmul: public Module {
@@ -13,6 +14,7 @@ class Matmul: public Module {
     int m, n, p;
 public:
     Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p);
+    ~Matmul() {}
     void forward(bool);
     void backward();
 };
@@ -23,12 +25,18 @@ class SparseMatmul: public Module {
     int m, n, p;
 public:
     SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *sp, int m, int n, int p);
+    ~SparseMatmul() {}
     void forward(bool);
     void backward();
 };
 
 class GraphSum: public Module {
+    Variable *in, *out;
+    SparseIndex *graph;
+    int dim;
 public:
+    GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim);
+    ~GraphSum() {}
     void forward(bool);
     void backward();
 };
@@ -40,6 +48,7 @@ class CrossEntropyLoss: public Module {
     int num_classes;
 public:
     CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes);
+    ~CrossEntropyLoss() {}
     void forward(bool);
     void backward();
 };
@@ -57,7 +66,6 @@ public:
 class Dropout: public Module {
     Variable *in;
     bool *mask;
-    bool training;
     float p;
 public:
     Dropout(Variable *in, float p);

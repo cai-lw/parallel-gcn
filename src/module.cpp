@@ -2,12 +2,6 @@
 #include <cstdlib>
 #include <cmath>
 
-/* TODO: Implement Matmul, SparseMatmul and GraphSum
- * Matmul = dense-dense matrix multiplication
- * SparseMatmul = sparse-dense matrix multiplication (used in the first layer since the input data is sparse)
- * GraphSum = left-multiplying the normalized Laplacian matrix (try to use more specialized method than sparse matrix multiplication!)
- */ 
-
 Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p):
     a(a), b(b), c(c), m(m), n(n), p(p) {}
 
@@ -57,11 +51,44 @@ void SparseMatmul::backward() {
     }
 }
 
+GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
+    in(in), out(out), graph(graph), dim(dim) {}
+
+void GraphSum::forward(bool training) {
+    out->zero();
+    int src = 0;
+    for(int i = 0; i < graph->nnz; i++) {
+        while(i >= graph->indptr[src + 1]) src++;
+        int dst = graph->indices[i];
+        float coef = 1.0 / sqrtf(
+            (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
+        );
+        for(int j = 0; j < dim; j++) {
+            out->data[dst * dim + j] += coef * in->data[src * dim + j];
+        }
+    }
+}
+
+void GraphSum::backward() {
+    in->zero_grad();
+    int src = 0;
+    for(int i = 0; i < graph->nnz; i++) {
+        while(i >= graph->indptr[src + 1]) src++;
+        int dst = graph->indices[i];
+        float coef = 1.0 / sqrtf(
+            (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
+        );
+        for(int j = 0; j < dim; j++) {
+            in->grad[src * dim + j] += coef * out->grad[dst * dim + j];
+        }
+    }
+}
+
 CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes):
     logits(logits), truth(truth), loss(loss), num_classes(num_classes) {}
 
 void CrossEntropyLoss::forward(bool training) {
-    loss = 0;
+    *loss = 0;
     for(int i = 0; i < logits->size / num_classes; i++) {
         if (truth[i] < 0) continue;
         float* logit = &logits->data[i * num_classes];
@@ -74,7 +101,7 @@ void CrossEntropyLoss::forward(bool training) {
                 logits->grad[i * num_classes + j] = prob;
             }
         }
-        loss += logf(sum_exp) - logit[truth[i]];
+        *loss += logf(sum_exp) - logit[truth[i]];
         if(training) logits->grad[i * num_classes + truth[i]] -= 1.0;
     }
 }
@@ -115,11 +142,12 @@ Dropout::~Dropout(){
 }
 
 void Dropout::forward(bool training) {
+    if (!training) return;
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
     for (int i = 0; i < in->size; i++) {
         bool drop = rand() < threshold;
-        if (training) mask[i] = drop;
+        mask[i] = drop;
         in->data[i] = drop ? 0 : in->data[i] * scale;
     }
 }

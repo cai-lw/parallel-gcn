@@ -3,7 +3,7 @@
 #include <cstring>
 #include <cmath>
 
-Variable::Variable(int size, bool requires_grad=true) {
+Variable::Variable(int size, bool requires_grad) {
     data = new float[size];
     grad = nullptr;
     this->size = size;

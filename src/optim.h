@@ -20,7 +20,7 @@ class Adam {
     int step_count;
     std::vector<AdamVariable> vars;
 public:
-    Adam();
+    Adam() {}
     Adam(std::vector<Variable*> vars, AdamParams params);
     void step();
 };
