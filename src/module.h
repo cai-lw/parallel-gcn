@@ -8,7 +8,10 @@ public:
 };
 
 class Matmul: public Module {
+    Variable *a, *b, *c;
+    int m, n, p;
 public:
+    Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p);
     void forward(bool);
     void backward();
 };

@@ -15,14 +15,14 @@ GCN::GCN(GCNParams params) {
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var2 = &variables.back();
     modules.push_back(new GraphSum());
-    modules.push_back(new ReLU());
-    modules.push_back(new Dropout());
+    modules.push_back(new ReLU(layer1_var2));
+    modules.push_back(new Dropout(layer1_var2, params.dropout));
     variables.emplace_back(params.num_nodes * params.output_dim);
     Variable *layer2_var1 = &variables.back();
     variables.emplace_back(params.hidden_dim * params.output_dim);
     Variable *layer2_weight = &variables.back();
     layer2_weight->glorot(params.hidden_dim, params.output_dim);
-    modules.push_back(new Matmul());
+    modules.push_back(new Matmul(layer1_var2, layer2_weight));
     variables.emplace_back(params.num_nodes * params.output_dim);
     Variable *layer2_var2 = &variables.back();
     modules.push_back(new GraphSum());

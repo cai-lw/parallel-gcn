@@ -8,12 +8,30 @@
  * GraphSum = left-multiplying the normalized Laplacian matrix (try to use more specialized method than sparse matrix multiplication!)
  */ 
 
-CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes) {
-    this->logits = logits;
-    this->truth = truth;
-    this->loss = loss;
-    this->num_classes = num_classes;
+Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p):
+    a(a), b(b), c(c), m(m), n(n), p(p) {}
+
+void Matmul::forward(bool training) {
+    c->zero();
+    for(int i = 0; i < m; i++)
+        for(int j = 0; j < n; j++)
+            for(int k = 0; k < p; k++)
+                c->data[i * p + k] += a->data[i * n + j] * b->data[j * p + k];
 }
+
+void Matmul::backward() {
+    a->zero_grad();
+    b->zero_grad();
+    for(int i = 0; i < m; i++)
+        for(int j = 0; j < n; j++)
+            for(int k = 0; k < p; k++) {
+                a->grad[i * n + j] += c->grad[i * p + k] * b->data[j * p + k];
+                b->grad[j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
+            }
+}
+
+CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes):
+    logits(logits), truth(truth), loss(loss), num_classes(num_classes) {}
 
 void CrossEntropyLoss::forward(bool training) {
     loss = 0;

@@ -14,6 +14,7 @@ class GCN {
     std::vector<Module*> modules;
     std::vector<Variable> variables;
     Adam optimizer;
+    float loss;
 public:
     GCN(GCNParams);
     ~GCN();
