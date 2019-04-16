@@ -30,6 +30,33 @@ void Matmul::backward() {
             }
 }
 
+SparseMatmul::SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *sp, int m, int n, int p):
+    a(a), b(b), c(c), sp(sp), m(m), n(n), p(p) {}
+
+void SparseMatmul::forward(bool training) {
+    c->zero();
+    int row = 0;
+    for(int i = 0; i < sp->nnz; i++) {
+        while(i >= sp->indptr[row + 1]) row++;
+        int col = sp->indices[i];
+        for(int k = 0; k < p; k++) {
+            c->data[row * p + k] += a->data[i] * b->data[col * p + k];
+        }
+    }
+}
+
+void SparseMatmul::backward() {
+    b->zero_grad();
+    int row = 0;
+    for(int i = 0; i < sp->nnz; i++) {
+        while(i >= sp->indptr[row + 1]) row++;
+        int col = sp->indices[i];
+        for(int k = 0; k < p; k++) {
+            b->grad[col * p + k] = c->grad[row * p + k] * a->data[i];
+        }
+    }
+}
+
 CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes):
     logits(logits), truth(truth), loss(loss), num_classes(num_classes) {}
 

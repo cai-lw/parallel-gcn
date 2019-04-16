@@ -1,5 +1,6 @@
 #ifndef MODULE_H
 #include "variable.h"
+#include "sparse.h"
 
 class Module {
 public:
@@ -17,7 +18,11 @@ public:
 };
 
 class SparseMatmul: public Module {
+    Variable *a, *b, *c;
+    SparseIndex *sp;
+    int m, n, p;
 public:
+    SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *sp, int m, int n, int p);
     void forward(bool);
     void backward();
 };
