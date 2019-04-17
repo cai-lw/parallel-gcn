@@ -108,19 +108,19 @@ std::pair<float, float> GCN::eval(int current_split) {
 void GCN::run() {
     for(int epoch = 0; epoch < params.epochs; epoch++) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        float train_loss, train_acc, dev_loss, dev_acc;
+        float train_loss, train_acc, val_loss, val_acc;
         std::tie(train_loss, train_acc) = train_epoch();
-        std::tie(dev_loss, dev_acc) = eval(2);
+        std::tie(val_loss, val_acc) = eval(2);
         auto t2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float, std::milli> elapsed = t2 - t1;
+        std::chrono::duration<float> elapsed = t2 - t1;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
-            epoch + 1, train_loss, train_acc, dev_loss, dev_acc, elapsed.count());
+            epoch + 1, train_loss, train_acc, val_loss, val_acc, elapsed.count());
     }
     auto t1 = std::chrono::high_resolution_clock::now();
     float test_loss, test_acc;
     std::tie(test_loss, test_acc) = eval(3);
     auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float, std::milli> elapsed = t2 - t1;
+    std::chrono::duration<float> elapsed = t2 - t1;
     printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed.count());
 }
 

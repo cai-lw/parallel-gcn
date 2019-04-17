@@ -1,4 +1,4 @@
-#ifndef MODEL_H
+#ifndef GCN_H
 #include <vector>
 #include <utility>
 #include "variable.h"
@@ -39,5 +39,5 @@ public:
     void run();
 };
 
-#define MODEL_H
+#define GCN_H
 #endif
