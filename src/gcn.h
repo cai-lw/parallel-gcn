@@ -6,6 +6,8 @@
 #include "module.h"
 #include "optim.h"
 
+
+
 struct GCNParams {
     int num_nodes, input_dim, hidden_dim, output_dim;
     float dropout, learning_rate, weight_decay;
@@ -13,15 +15,17 @@ struct GCNParams {
     static GCNParams get_default();
 };
 
-struct GCNData {
-    float *feature_value;
+class GCNData {
+public:
     SparseIndex *feature_index, *graph;
-    int *split, *label;
+    std::vector<int> split;
+    std::vector<int> label;
+    std::vector<float> feature_value;
+
+    GCNData();
 };
 
 class GCN {
-    GCNParams params;
-    GCNData data;
     std::vector<Module*> modules;
     std::vector<Variable> variables;
     Variable *input, *output;
@@ -33,8 +37,11 @@ class GCN {
     float get_accuracy();
     std::pair<float, float> train_epoch();
     std::pair<float, float> eval(int current_split);
+    GCNData data;
 public:
     GCN(GCNParams params, GCNData data);
+    GCN();
+    GCNParams params;
     ~GCN();
     void run();
 };

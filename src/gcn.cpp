@@ -51,7 +51,9 @@ GCN::~GCN(){
 
 void GCN::set_input(bool training) {
     if (!training) {
-        memcpy(input->data, data.feature_value, input->size * sizeof(float));
+        for (int i = 0; i < input->size; i++) {
+            input->data[i] = data.feature_value[i];
+        }
         return;
     }
     const int threshold = int(params.dropout * RAND_MAX);
@@ -124,3 +126,7 @@ void GCN::run() {
     printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed.count());
 }
 
+GCNData::GCNData() {
+    this->graph = new SparseIndex();
+    this->feature_index = new SparseIndex();
+}
