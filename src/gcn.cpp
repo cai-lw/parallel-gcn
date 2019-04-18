@@ -115,6 +115,17 @@ void GCN::run() {
         std::chrono::duration<float> elapsed = t2 - t1;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
             epoch + 1, train_loss, train_acc, val_loss, val_acc, elapsed.count());
+        
+        loss_history.push_back(val_loss);
+        if(epoch >= params.early_stopping - 1) {
+            float recent_loss = 0.0;
+            for(int i = epoch - params.early_stopping + 1; i <= epoch; i++)
+                recent_loss += loss_history[i];
+            if (val_loss > recent_loss / params.early_stopping) {
+                printf("Early stopping...\n");
+                break;
+            }
+        }
     }
     auto t1 = std::chrono::high_resolution_clock::now();
     float test_loss, test_acc;
