@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     }
 
 
-    GCN gcn(params, data);
+    GCN gcn(params, &data);
     gcn.run();
     return EXIT_SUCCESS;
 }

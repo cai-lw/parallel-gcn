@@ -6,8 +6,6 @@
 #include "module.h"
 #include "optim.h"
 
-
-
 struct GCNParams {
     int num_nodes, input_dim, hidden_dim, output_dim;
     float dropout, learning_rate, weight_decay;
@@ -36,9 +34,9 @@ class GCN {
     float get_accuracy();
     std::pair<float, float> train_epoch();
     std::pair<float, float> eval(int current_split);
-    GCNData data;
+    GCNData *data;
 public:
-    GCN(GCNParams params, GCNData data);
+    GCN(GCNParams params, GCNData *data);
     GCN();
     GCNParams params;
     ~GCN();

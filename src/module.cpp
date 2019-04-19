@@ -89,21 +89,28 @@ CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, in
 
 void CrossEntropyLoss::forward(bool training) {
     *loss = 0;
+    int count = 0;
     for(int i = 0; i < logits->size() / num_classes; i++) {
         if (truth[i] < 0) continue;
+        count++;
         float* logit = &logits->data[i * num_classes];
         float sum_exp = 0.0;
         for(int j = 0; j < num_classes; j++)
-            sum_exp += logit[j];
+            sum_exp += expf(logit[j]);
+        *loss += logf(sum_exp) - logit[truth[i]];
+
         if(training) {
             for(int j = 0; j < num_classes; j++) {
                 float prob = expf(logit[j]) / sum_exp;
                 logits->grad[i * num_classes + j] = prob;
             }
+            logits->grad[i * num_classes + truth[i]] -= 1.0;
         }
-        *loss += logf(sum_exp) - logit[truth[i]];
-        if(training) logits->grad[i * num_classes + truth[i]] -= 1.0;
     }
+    *loss /= count;
+    if(training)
+        for(auto &g: logits->grad)
+            g /= count;
 }
 
 void CrossEntropyLoss::backward() {

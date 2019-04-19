@@ -8,6 +8,7 @@ struct Variable {
     void glorot(int in_size, int out_size);
     void zero();
     void zero_grad();
+    void print(int col=0x7fffffff);
 };
 
 #define VARIABLE_H

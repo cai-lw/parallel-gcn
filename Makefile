@@ -1,10 +1,10 @@
 CXX=g++
 CXXFLAGS=-O3 -std=c++11 -Wall
 LDFLAGS=-lm
-CXXFILES=main.cpp gcn.cpp optim.cpp module.cpp variable.cpp parser.cpp
-HFILES=gcn.h optim.h module.h variable.h sparse.h parser.h
+CXXFILES=src/main.cpp src/gcn.cpp src/optim.cpp src/module.cpp src/variable.cpp src/parser.cpp
+HFILES=src/gcn.h src/optim.h src/module.h src/variable.h src/sparse.h src/parser.h
 
 all: gcn-seq
 
-gcn-seq: #$(CXXFILES) $(HFILES)
-	cd src; $(CXX) $(CXXFLAGS) -o gcn-seq $(CXXFILES) $(LDFLAGS); cd ..; mv src/gcn-seq .
+gcn-seq: $(CXXFILES) $(HFILES)
+	$(CXX) $(CXXFLAGS) -o gcn-seq $(CXXFILES) $(LDFLAGS)

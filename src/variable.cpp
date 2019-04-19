@@ -1,6 +1,7 @@
 #include "variable.h"
 #include <cstdlib>
 #include <cmath>
+#include <cstdio>
 #include <algorithm>
 
 Variable::Variable(int size, bool requires_grad):
@@ -22,4 +23,13 @@ void Variable::zero() {
 
 void Variable::zero_grad() {
     if (!grad.empty()) std::fill(grad.begin(), grad.end(), 0);
+}
+
+void Variable::print(int col) {
+    int count = 0;
+    for(float x: data) {
+        printf("%.4f ", x);
+        count++;
+        if(count % col == 0) printf("\n");
+    }
 }
