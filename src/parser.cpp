@@ -20,7 +20,10 @@ void Parser::parseGraph() {
     graph_sparse_index.indptr.push_back(0);
     int node = 0;
     for (; !graph_file.eof(); node++) {
-        graph_sparse_index.indptr.push_back(graph_sparse_index.indptr.back());
+        // Implicit self connection
+        graph_sparse_index.indices.push_back(node);
+        graph_sparse_index.indptr.push_back(graph_sparse_index.indptr.back() + 1);
+
         std::string line;
         getline(graph_file, line);
         std::istringstream ss(line);
