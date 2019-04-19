@@ -8,11 +8,10 @@ struct AdamParams {
 };
 
 struct AdamVariable {
-    float *data, *grad, *m, *v;
-    int size;
+    std::vector<float> *data, *grad, m, v;
 public:
+    int size();
     AdamVariable(Variable*);
-    ~AdamVariable();
 };
 
 class Adam {

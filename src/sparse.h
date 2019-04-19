@@ -13,7 +13,6 @@ class SparseIndex {
 public:
     std::vector<int> indices;
     std::vector<int> indptr;
-    int nrow, nnz;
     void print();
 };
 

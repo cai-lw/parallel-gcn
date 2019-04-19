@@ -17,19 +17,17 @@ struct GCNParams {
 
 class GCNData {
 public:
-    SparseIndex *feature_index, *graph;
+    SparseIndex feature_index, graph;
     std::vector<int> split;
     std::vector<int> label;
     std::vector<float> feature_value;
-
-    GCNData();
 };
 
 class GCN {
     std::vector<Module*> modules;
     std::vector<Variable> variables;
     Variable *input, *output;
-    int *truth;
+    std::vector<int> truth;
     Adam optimizer;
     float loss;
     std::vector<float> loss_history;

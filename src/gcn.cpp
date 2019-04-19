@@ -12,17 +12,17 @@ GCNParams GCNParams::get_default() {
 GCN::GCN(GCNParams params, GCNData data) {
     this->params = params;
     this->data = data;
-    variables.emplace_back(data.feature_index->nnz, false);
+    variables.emplace_back(data.feature_index.indices.size(), false);
     input = &variables.back();
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var1 = &variables.back();
     variables.emplace_back(params.input_dim * params.hidden_dim);
     Variable *layer1_weight = &variables.back();
     layer1_weight->glorot(params.input_dim, params.hidden_dim);
-    modules.push_back(new SparseMatmul(input, layer1_weight, layer1_var1, data.feature_index, params.num_nodes, params.input_dim, params.hidden_dim));
+    modules.push_back(new SparseMatmul(input, layer1_weight, layer1_var1, &data.feature_index, params.num_nodes, params.input_dim, params.hidden_dim));
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var2 = &variables.back();
-    modules.push_back(new GraphSum(layer1_var1, layer1_var2, data.graph, params.hidden_dim));
+    modules.push_back(new GraphSum(layer1_var1, layer1_var2, &data.graph, params.hidden_dim));
     modules.push_back(new ReLU(layer1_var2));
     modules.push_back(new Dropout(layer1_var2, params.dropout));
     variables.emplace_back(params.num_nodes * params.output_dim);
@@ -33,10 +33,10 @@ GCN::GCN(GCNParams params, GCNData data) {
     modules.push_back(new Matmul(layer1_var2, layer2_weight, layer2_var1, params.num_nodes, params.hidden_dim, params.output_dim));
     variables.emplace_back(params.num_nodes * params.output_dim);
     output = &variables.back();
-    modules.push_back(new GraphSum(layer2_var1, output, data.graph, params.output_dim));
-    truth = new int[params.num_nodes];
-    modules.push_back(new CrossEntropyLoss(output, truth, &loss, params.output_dim));
-
+    modules.push_back(new GraphSum(layer2_var1, output, &data.graph, params.output_dim));
+    truth = std::vector<int>(params.num_nodes);
+    modules.push_back(new CrossEntropyLoss(output, truth.data(), &loss, params.output_dim));
+    
     AdamParams adam_params = AdamParams::get_default();
     adam_params.lr = params.learning_rate;
     adam_params.weight_decay = params.weight_decay;
@@ -44,21 +44,20 @@ GCN::GCN(GCNParams params, GCNData data) {
 }
 
 GCN::~GCN(){
-    delete[] truth;
     for(auto m: modules)
         delete m;
 }
 
 void GCN::set_input(bool training) {
     if (!training) {
-        for (int i = 0; i < input->size; i++) {
+        for (int i = 0; i < input->size(); i++) {
             input->data[i] = data.feature_value[i];
         }
         return;
     }
     const int threshold = int(params.dropout * RAND_MAX);
     float scale = 1 / (1 - params.dropout);
-    for (int i = 0; i < input->size; i++) {
+    for (int i = 0; i < input->size(); i++) {
         bool drop = rand() < threshold;
         input->data[i] = drop ? 0 : data.feature_value[i] * scale;
     }
@@ -135,9 +134,4 @@ void GCN::run() {
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> elapsed = t2 - t1;
     printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed.count());
-}
-
-GCNData::GCNData() {
-    this->graph = new SparseIndex();
-    this->feature_index = new SparseIndex();
 }
