@@ -41,7 +41,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     AdamParams adam_params = AdamParams::get_default();
     adam_params.lr = params.learning_rate;
     adam_params.weight_decay = params.weight_decay;
-    optimizer = Adam({layer1_weight, layer2_weight}, adam_params);
+    optimizer = Adam({{layer1_weight, true}, {layer2_weight, false}}, adam_params);
 }
 
 GCN::~GCN(){

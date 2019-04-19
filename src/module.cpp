@@ -90,6 +90,7 @@ CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, in
 void CrossEntropyLoss::forward(bool training) {
     *loss = 0;
     int count = 0;
+    if(training) logits->zero_grad();
     for(int i = 0; i < logits->size() / num_classes; i++) {
         if (truth[i] < 0) continue;
         count++;
@@ -127,15 +128,15 @@ ReLU::~ReLU(){
 
 void ReLU::forward(bool training) {
     for (int i = 0; i < in->size(); i++) {
-        bool drop = in->data[i] > 0;
-        if (training) mask[i] = drop;
-        in->data[i] *= drop;
+        bool keep = in->data[i] > 0;
+        if (training) mask[i] = keep;
+        if (!keep) in->data[i] = 0;
     }
 }
 
 void ReLU::backward() {
     for (int i = 0; i < in->size(); i++)
-        in->grad[i] *= mask[i];
+        if (!mask[i]) in->grad[i] = 0;
 }
 
 Dropout::Dropout(Variable *in, float p) {
@@ -153,14 +154,14 @@ void Dropout::forward(bool training) {
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
     for (int i = 0; i < in->size(); i++) {
-        bool drop = rand() < threshold;
-        mask[i] = drop;
-        in->data[i] = drop ? 0 : in->data[i] * scale;
+        bool keep = rand() >= threshold;
+        mask[i] = keep;
+        in->data[i] *= mask[i] ? scale : 0;
     }
 }
 
 void Dropout::backward() {
     float scale = 1 / (1 - p);
     for (int i = 0; i < in->size(); i++)
-        in->grad[i] *= mask[i] ? 0 : scale;
+        in->grad[i] *= mask[i] ? scale : 0;
 }

@@ -1,5 +1,6 @@
 #ifndef OPTIM_H
 #include <vector>
+#include <utility>
 #include "variable.h"
 
 struct AdamParams {
@@ -9,9 +10,10 @@ struct AdamParams {
 
 struct AdamVariable {
     std::vector<float> *data, *grad, m, v;
+    bool decay;
 public:
     int size();
-    AdamVariable(Variable*);
+    AdamVariable(Variable*, bool);
 };
 
 class Adam {
@@ -20,7 +22,7 @@ class Adam {
     std::vector<AdamVariable> vars;
 public:
     Adam() {}
-    Adam(std::vector<Variable*> vars, AdamParams params);
+    Adam(std::vector<std::pair<Variable*, bool>> vars, AdamParams params);
     void step();
 };
 

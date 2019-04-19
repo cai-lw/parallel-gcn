@@ -12,7 +12,7 @@ int Variable::size() {
 }
 
 void Variable::glorot(int in_size, int out_size) {
-    float range = sqrtf(6.0 / (in_size + out_size));
+    float range = sqrtf(6.0f / (in_size + out_size));
     for(int i = 0; i < size(); i++)
         data[i] = (float(rand()) / RAND_MAX - 0.5) * range * 2;
 }
@@ -22,7 +22,7 @@ void Variable::zero() {
 }
 
 void Variable::zero_grad() {
-    if (!grad.empty()) std::fill(grad.begin(), grad.end(), 0);
+    std::fill(grad.begin(), grad.end(), 0);
 }
 
 void Variable::print(int col) {
