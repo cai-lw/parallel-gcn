@@ -19,21 +19,26 @@ void Parser::parseGraph() {
 
     graph_sparse_index.indptr.push_back(0);
     int node = 0;
-    for (; !graph_file.eof(); node++) {
+    while(true) {
+        std::string line;
+        getline(graph_file, line);
+        if (graph_file.eof()) break;
+        
         // Implicit self connection
         graph_sparse_index.indices.push_back(node);
         graph_sparse_index.indptr.push_back(graph_sparse_index.indptr.back() + 1);
+        node++;
 
-        std::string line;
-        getline(graph_file, line);
         std::istringstream ss(line);
-        while (!line.empty() && !ss.eof()) {
+        while (true) {
             int neighbor;
             ss >> neighbor;
+            if (ss.fail()) break;
             graph_sparse_index.indices.push_back(neighbor);
             graph_sparse_index.indptr.back() += 1;
         }
     }
+    
     gcnParams->num_nodes = node;
 }
 
@@ -49,21 +54,23 @@ void Parser::parseNode() {
     feature_sparse_index.indptr.push_back(0);
 
     int max_idx = 0, max_label = 0;
-    for (int node = 0; !svmlight_file.eof(); node++) {
-        feature_sparse_index.indptr.push_back(feature_sparse_index.indptr.back());
-
+    while(true) {
         std::string line;
         getline(svmlight_file, line);
+        if (svmlight_file.eof()) break;
+        feature_sparse_index.indptr.push_back(feature_sparse_index.indptr.back());
         std::istringstream ss(line);
 
         int label;
         ss >> label;
+        if (ss.fail()) continue;
         labels.push_back(label);
         max_label = max(max_label, label);
 
-        while (!line.empty() && !ss.eof()) {
+        while (true) {
             string kv;
             ss >> kv;
+            if(ss.fail()) break;
             std::istringstream kv_ss(kv);
 
             int k;
@@ -84,11 +91,17 @@ void Parser::parseNode() {
 void Parser::parseSplit() {
     auto &split = this->gcnData->split;
 
-    while (!split_file.eof()) {
-        int s;
-        split_file >> s;
-        split.push_back(s);
+    while (true) {
+        std::string line;
+        getline(split_file, line);
+        if (split_file.eof()) break;
+        split.push_back(std::stoi(line));
     }
+}
+
+void vprint(std::vector<int> v){
+    for(int i:v)printf("%i ", i);
+    printf("\n");
 }
 
 bool Parser::parse() {
@@ -96,6 +109,7 @@ bool Parser::parse() {
     this->parseGraph();
     this->parseNode();
     this->parseSplit();
+    printf("%d %d %d\n", gcnData->graph.indices.size(), gcnData->feature_index.indices.size(), gcnData->split.size());
     return true;
 }
 
