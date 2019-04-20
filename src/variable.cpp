@@ -33,3 +33,9 @@ void Variable::print(int col) {
         if(count % col == 0) printf("\n");
     }
 }
+
+float Variable::grad_norm() {
+    float norm = 0;
+    for(float x: grad) norm += x * x;
+    return sqrtf(norm);
+}

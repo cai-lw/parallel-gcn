@@ -33,4 +33,5 @@
 
 /data
 /.vscode
-/gcn-seq
+/gcn-*
+/include

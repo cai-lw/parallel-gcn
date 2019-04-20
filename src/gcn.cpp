@@ -51,9 +51,7 @@ GCN::~GCN(){
 
 void GCN::set_input(bool training) {
     if (!training) {
-        for (int i = 0; i < input->size(); i++) {
-            input->data[i] = data->feature_value[i];
-        }
+        std::copy(data->feature_value.begin(), data->feature_value.end(), input->data.begin());
         return;
     }
     const int threshold = int(params.dropout * RAND_MAX);
@@ -108,20 +106,23 @@ std::pair<float, float> GCN::eval(int current_split) {
 }
 
 void GCN::run() {
-    for(int epoch = 0; epoch < params.epochs; epoch++) {
+    int epoch = 1;
+    float total_time = 0.0;
+    for(; epoch <= params.epochs; epoch++) {
         auto t1 = std::chrono::high_resolution_clock::now();
         float train_loss, train_acc, val_loss, val_acc;
         std::tie(train_loss, train_acc) = train_epoch();
         std::tie(val_loss, val_acc) = eval(2);
         auto t2 = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> elapsed = t2 - t1;
+        total_time += elapsed.count();
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
-            epoch + 1, train_loss, train_acc, val_loss, val_acc, elapsed.count());
+            epoch, train_loss, train_acc, val_loss, val_acc, elapsed.count());
         
         loss_history.push_back(val_loss);
-        if(epoch >= params.early_stopping - 1) {
+        if(params.early_stopping > 0 && epoch >= params.early_stopping) {
             float recent_loss = 0.0;
-            for(int i = epoch - params.early_stopping + 1; i <= epoch; i++)
+            for(int i = epoch - params.early_stopping; i < epoch; i++)
                 recent_loss += loss_history[i];
             if (val_loss > recent_loss / params.early_stopping) {
                 printf("Early stopping...\n");
@@ -129,6 +130,8 @@ void GCN::run() {
             }
         }
     }
+    printf("Average time per epoch: %.5fs\n", total_time / std::min(epoch, params.epochs));
+
     auto t1 = std::chrono::high_resolution_clock::now();
     float test_loss, test_acc;
     std::tie(test_loss, test_acc) = eval(3);

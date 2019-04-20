@@ -26,7 +26,17 @@ Either copy the `data` folder in the original GCN repo to this repo and run `con
 ### Build and run
 
 ```sh
-cd src
 make
-./gcn-seq # arguments TBD
+./gcn-seq cora # dataset name
+```
+
+### Tests
+
+We use [Catch2](https://github.com/catchorg/Catch2) for unit tests.
+
+Download the single header file and put it in `include/catch2/catch.hpp`. Then
+
+```sh
+make test
+./gcn-test
 ```

@@ -9,6 +9,7 @@ struct Variable {
     void zero();
     void zero_grad();
     void print(int col=0x7fffffff);
+    float grad_norm();
 };
 
 #define VARIABLE_H

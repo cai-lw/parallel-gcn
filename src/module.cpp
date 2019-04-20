@@ -46,7 +46,7 @@ void SparseMatmul::backward() {
         while(i >= sp->indptr[row + 1]) row++;
         int col = sp->indices[i];
         for(int k = 0; k < p; k++) {
-            b->grad[col * p + k] = c->grad[row * p + k] * a->data[i];
+            b->grad[col * p + k] += c->grad[row * p + k] * a->data[i];
         }
     }
 }
