@@ -61,10 +61,10 @@ void Parser::parseNode() {
         feature_sparse_index.indptr.push_back(feature_sparse_index.indptr.back());
         std::istringstream ss(line);
 
-        int label;
+        int label = -1;
         ss >> label;
-        if (ss.fail()) continue;
         labels.push_back(label);
+        if (ss.fail()) continue;
         max_label = max(max_label, label);
 
         while (true) {
@@ -109,7 +109,6 @@ bool Parser::parse() {
     this->parseGraph();
     this->parseNode();
     this->parseSplit();
-    printf("%d %d %d\n", gcnData->graph.indices.size(), gcnData->feature_index.indices.size(), gcnData->split.size());
     return true;
 }
 
