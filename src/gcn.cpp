@@ -12,6 +12,7 @@ GCNParams GCNParams::get_default() {
 GCN::GCN(GCNParams params, GCNData *input_data) {
     this->params = params;
     data = input_data;
+    modules.reserve(8);
     variables.reserve(8);
     variables.emplace_back(data->feature_index.indices.size(), false);
     input = &variables.back();
@@ -82,12 +83,19 @@ float GCN::get_accuracy() {
     return float(total - wrong) / total;
 }
 
+float GCN::get_l2_penalty() {
+    float l2 = 0;
+    for (float x: variables[2].data)
+        l2 += x * x;
+    return params.weight_decay * l2 / 2;
+}
+
 std::pair<float, float> GCN::train_epoch() {
     set_input(true);
     set_truth(1);
     for (auto m: modules)
         m->forward(true);
-    float train_loss = loss;
+    float train_loss = loss + get_l2_penalty();
     float train_acc = get_accuracy();
     for (int i = modules.size() - 1; i >= 0; i--)
         modules[i]->backward();
@@ -100,7 +108,7 @@ std::pair<float, float> GCN::eval(int current_split) {
     set_truth(current_split);
     for (auto m: modules)
         m->forward(false);
-    float test_loss = loss;
+    float test_loss = loss + get_l2_penalty();
     float test_acc = get_accuracy();
     return {test_loss, test_acc};
 }

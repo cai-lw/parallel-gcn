@@ -14,6 +14,7 @@ int AdamVariable::size() {
 }
 
 Adam::Adam(std::vector<std::pair<Variable*, bool>> vars, AdamParams params){
+    step_count = 0;
     this->params = params;
     for (auto v: vars)
         this->vars.emplace_back(v.first, v.second);
@@ -27,7 +28,6 @@ void Adam::step(){
             float grad = (*var.grad)[i];
             if (var.decay) grad += params.weight_decay * (*var.data)[i];
             var.m[i] = params.beta1 * var.m[i] + (1.0 - params.beta1) * grad;
-            //(*var.data)[i] -= params.lr * var.m[i];
             var.v[i] = params.beta2 * var.v[i] + (1.0 - params.beta2) * grad * grad;
             (*var.data)[i] -= step_size * var.m[i] / (sqrtf(var.v[i]) + params.eps);
         }

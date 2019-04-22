@@ -32,6 +32,7 @@ class GCN {
     void set_input(bool training);
     void set_truth(int current_split);
     float get_accuracy();
+    float get_l2_penalty();
     std::pair<float, float> train_epoch();
     std::pair<float, float> eval(int current_split);
     GCNData *data;
