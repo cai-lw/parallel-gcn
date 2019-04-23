@@ -4,7 +4,9 @@
 
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 #include "parser.h"
+
 using namespace std;
 Parser::Parser(GCNParams *gcnParams, GCNData *gcnData, std::string graph_name) {
     this->graph_file.open("data/" + graph_name + ".graph");
@@ -67,6 +69,8 @@ void Parser::parseNode() {
         if (ss.fail()) continue;
         max_label = max(max_label, label);
 
+        int feature_begin = feature_val.size();
+        float feature_sum = 0;
         while (true) {
             string kv;
             ss >> kv;
@@ -81,8 +85,12 @@ void Parser::parseNode() {
             feature_val.push_back(v);
             feature_sparse_index.indices.push_back(k);
             feature_sparse_index.indptr.back() += 1;
+            feature_sum += v;
             max_idx = max(max_idx, k);
         }
+        // Normalize the feature vector. Each vector should sum to one
+        for (int i = feature_begin; i < feature_val.size(); i++)
+            feature_val[i] /= feature_sum;
     }
     gcnParams->input_dim = max_idx + 1;
     gcnParams->output_dim = max_label + 1;
