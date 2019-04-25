@@ -33,7 +33,6 @@ void SparseMatmul::forward(bool training) {
     c->zero();
     int row = 0;
 
-#pragma omp parallel for schedule(static)
     for(int i = 0; i < sp->indices.size(); i++) {
         while(i >= sp->indptr[row + 1]) row++;
         int col = sp->indices[i];
@@ -61,6 +60,7 @@ GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
 void GraphSum::forward(bool training) {
     out->zero();
     int src = 0;
+#pragma omp parallel for schedule(static)
     for(int i = 0; i < graph->indices.size(); i++) {
         while(i >= graph->indptr[src + 1]) src++;
         int dst = graph->indices[i];
