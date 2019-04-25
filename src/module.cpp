@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cmath>
 
+#include <omp.h>
+
 Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p):
     a(a), b(b), c(c), m(m), n(n), p(p) {}
 
@@ -30,6 +32,8 @@ SparseMatmul::SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *s
 void SparseMatmul::forward(bool training) {
     c->zero();
     int row = 0;
+
+#pragma omp parallel for schedule(static)
     for(int i = 0; i < sp->indices.size(); i++) {
         while(i >= sp->indptr[row + 1]) row++;
         int col = sp->indices[i];

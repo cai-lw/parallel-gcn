@@ -98,32 +98,32 @@ float GCN::get_l2_penalty() {
 }
 
 std::pair<float, float> GCN::train_epoch() {
-    START_CLOCK(SET_INPUT);
+//    START_CLOCK(SET_INPUT);
     set_input(true);
-    END_CLOCK(SET_INPUT);
+//    END_CLOCK(SET_INPUT);
 
-    START_CLOCK(SET_TRUTH);
+//    START_CLOCK(SET_TRUTH);
     set_truth(1);
-    END_CLOCK(SET_TRUTH);
+//    END_CLOCK(SET_TRUTH);
 
     START_CLOCK(FORWARD);
     for (auto m: modules)
         m->forward(true);
     END_CLOCK(FORWARD);
 
-    START_CLOCK(Envaluate);
+//    START_CLOCK(Envaluate);
     float train_loss = loss + get_l2_penalty();
     float train_acc = get_accuracy();
-    END_CLOCK(Envaluate);
+//    END_CLOCK(Envaluate);
 
-    START_CLOCK(CALCULATE_Grad);
+//    START_CLOCK(CALCULATE_Grad);
     for (int i = modules.size() - 1; i >= 0; i--)
         modules[i]->backward();
-    END_CLOCK(CALCULATE_Grad);
+//    END_CLOCK(CALCULATE_Grad);
 
-    START_CLOCK(OPTIMIZE);
+//    START_CLOCK(OPTIMIZE);
     optimizer.step();
-    END_CLOCK(OPTIMIZE);
+//    END_CLOCK(OPTIMIZE);
 
     return {train_loss, train_acc};
 }
