@@ -3,7 +3,6 @@
 
 struct Variable {
     std::vector<float> data, grad;
-    int size();
     Variable(int size, bool requires_grad=true);
     void glorot(int in_size, int out_size);
     void zero();

@@ -7,7 +7,7 @@ AdamParams AdamParams::get_default() {
 }
 
 AdamVariable::AdamVariable(Variable *var, bool decay):
-    data(&var->data), grad(&var->grad), m(var->size(), 0.0), v(var->size(), 0.0), decay(decay) {}
+    data(&var->data), grad(&var->grad), m(var->data.size(), 0.0), v(var->data.size(), 0.0), decay(decay) {}
 
 int AdamVariable::size() {
     return data->size();

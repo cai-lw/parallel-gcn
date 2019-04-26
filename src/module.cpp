@@ -19,7 +19,7 @@ void Matmul::forward(bool training) {
 void Matmul::backward() {
     a->zero_grad();
     b->zero_grad();
-    #pragma omp parallel for schedule(static)
+    //#pragma omp parallel for schedule(static)
     for(int i = 0; i < m; i++)
         for(int j = 0; j < n; j++)
             for(int k = 0; k < p; k++) {
@@ -45,11 +45,12 @@ void SparseMatmul::forward(bool training) {
 void SparseMatmul::backward() {
     b->zero_grad();
     int row = 0;
-    #pragma omp parallel for schedule(static)
+    //#pragma omp parallel for schedule(static)
     for(int i = 0; i < sp->indptr.size() - 1; i++)
         for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
             for(int k = 0; k < p; k++)
+                #pragma omp atomic
                 b->grad[j * p + k] += c->grad[i * p + k] * a->data[jj];
         }
 }
@@ -59,7 +60,7 @@ GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
 
 void GraphSum::forward(bool training) {
     out->zero();
-    #pragma omp parallel for schedule(static)
+    //#pragma omp parallel for schedule(static)
     for(int src = 0; src < graph->indptr.size() - 1; src++)
         for(int i = graph->indptr[src]; i < graph->indptr[src + 1]; i++) {
             int dst = graph->indices[i];
@@ -67,6 +68,7 @@ void GraphSum::forward(bool training) {
                 (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
             );
             for(int j = 0; j < dim; j++)
+                #pragma omp atomic
                 out->data[dst * dim + j] += coef * in->data[src * dim + j];
         }
 }
@@ -92,7 +94,7 @@ void CrossEntropyLoss::forward(bool training) {
     *loss = 0;
     int count = 0;
     if(training) logits->zero_grad();
-    for(int i = 0; i < logits->size() / num_classes; i++) {
+    for(int i = 0; i < logits->data.size() / num_classes; i++) {
         if (truth[i] < 0) continue;
         count++;
         float* logit = &logits->data[i * num_classes];
@@ -120,7 +122,7 @@ void CrossEntropyLoss::backward() {
 
 ReLU::ReLU(Variable *in) {
     this->in = in;
-    mask = new bool[in->size()];
+    mask = new bool[in->data.size()];
 }
 
 ReLU::~ReLU(){
@@ -128,7 +130,7 @@ ReLU::~ReLU(){
 }
 
 void ReLU::forward(bool training) {
-    for (int i = 0; i < in->size(); i++) {
+    for (int i = 0; i < in->data.size(); i++) {
         bool keep = in->data[i] > 0;
         if (training) mask[i] = keep;
         if (!keep) in->data[i] = 0;
@@ -136,14 +138,14 @@ void ReLU::forward(bool training) {
 }
 
 void ReLU::backward() {
-    for (int i = 0; i < in->size(); i++)
+    for (int i = 0; i < in->data.size(); i++)
         if (!mask[i]) in->grad[i] = 0;
 }
 
 Dropout::Dropout(Variable *in, float p) {
     this->in = in;
     this->p = p;
-    mask = new bool[in->size()];
+    mask = new bool[in->data.size()];
 }
 
 Dropout::~Dropout(){
@@ -154,7 +156,7 @@ void Dropout::forward(bool training) {
     if (!training) return;
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
-    for (int i = 0; i < in->size(); i++) {
+    for (int i = 0; i < in->data.size(); i++) {
         bool keep = rand() >= threshold;
         mask[i] = keep;
         in->data[i] *= mask[i] ? scale : 0;
@@ -163,6 +165,6 @@ void Dropout::forward(bool training) {
 
 void Dropout::backward() {
     float scale = 1 / (1 - p);
-    for (int i = 0; i < in->size(); i++)
+    for (int i = 0; i < in->data.size(); i++)
         in->grad[i] *= mask[i] ? scale : 0;
 }
