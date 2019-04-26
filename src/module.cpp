@@ -50,7 +50,6 @@ void SparseMatmul::backward() {
         for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
             for(int k = 0; k < p; k++)
-                #pragma omp atomic
                 b->grad[j * p + k] += c->grad[i * p + k] * a->data[jj];
         }
 }
@@ -68,7 +67,6 @@ void GraphSum::forward(bool training) {
                 (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
             );
             for(int j = 0; j < dim; j++)
-                #pragma omp atomic
                 out->data[dst * dim + j] += coef * in->data[src * dim + j];
         }
 }
