@@ -7,18 +7,6 @@
 #include "optim.h"
 #include "cycletimer.h"
 
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-
-#if DEBUG
-#define START_CLOCK(X) double X = currentSeconds() * 1000;
-#define END_CLOCK(X) fprintf(stderr, #X " took %f ms\n", currentSeconds() * 1000 - X);
-#else
-#define START_CLOCK(X)
-#define END_CLOCK(X)
-#endif
-
 struct GCNParams {
     int num_nodes, input_dim, hidden_dim, output_dim;
     float dropout, learning_rate, weight_decay;

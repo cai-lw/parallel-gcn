@@ -1,9 +1,9 @@
 #include "gcn.h"
+#include "cycletimer.h"
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
 #include <tuple>
-#include <chrono>
 
 GCNParams GCNParams::get_default() {
     return {2708, 1433, 16, 7, 0.5, 0.01, 5e-4, 200, 10};
@@ -106,10 +106,10 @@ std::pair<float, float> GCN::train_epoch() {
     set_truth(1);
 //    END_CLOCK(SET_TRUTH);
 
-    START_CLOCK(FORWARD);
+//    START_CLOCK(FORWARD);
     for (auto m: modules)
         m->forward(true);
-    END_CLOCK(FORWARD);
+//    END_CLOCK(FORWARD);
 
 //    START_CLOCK(Envaluate);
     float train_loss = loss + get_l2_penalty();
@@ -142,15 +142,14 @@ void GCN::run() {
     int epoch = 1;
     float total_time = 0.0;
     for(; epoch <= params.epochs; epoch++) {
-        auto t1 = std::chrono::high_resolution_clock::now();
+        float t1 = currentSeconds();
         float train_loss, train_acc, val_loss, val_acc;
         std::tie(train_loss, train_acc) = train_epoch();
         std::tie(val_loss, val_acc) = eval(2);
-        auto t2 = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> elapsed = t2 - t1;
-        total_time += elapsed.count();
+        float elapsed = currentSeconds() - t1;
+        total_time += elapsed;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
-            epoch, train_loss, train_acc, val_loss, val_acc, elapsed.count());
+            epoch, train_loss, train_acc, val_loss, val_acc, elapsed);
         
         loss_history.push_back(val_loss);
         if(params.early_stopping > 0 && epoch >= params.early_stopping) {
@@ -165,10 +164,9 @@ void GCN::run() {
     }
     printf("Average time per epoch: %.5fs\n", total_time / std::min(epoch, params.epochs));
 
-    auto t1 = std::chrono::high_resolution_clock::now();
+    float t1 = currentSeconds();
     float test_loss, test_acc;
     std::tie(test_loss, test_acc) = eval(3);
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float> elapsed = t2 - t1;
-    printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed.count());
+    float elapsed = currentSeconds() - t1;
+    printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed);
 }
