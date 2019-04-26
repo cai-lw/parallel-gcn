@@ -1,7 +1,6 @@
 #ifndef MODULE_H
 #include "variable.h"
 #include "sparse.h"
-#include "cycletimer.h"
 
 class Module {
 public:

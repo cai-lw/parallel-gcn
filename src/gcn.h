@@ -5,7 +5,6 @@
 #include "sparse.h"
 #include "module.h"
 #include "optim.h"
-#include "cycletimer.h"
 
 struct GCNParams {
     int num_nodes, input_dim, hidden_dim, output_dim;

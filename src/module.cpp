@@ -47,7 +47,7 @@ void SparseMatmul::backward() {
     int row = 0;
     #pragma omp parallel for schedule(static)
     for(int i = 0; i < sp->indptr.size() - 1; i++)
-        for(int jj = sp->indices[i]; jj < sp->indices[i + 1]; jj++) {
+        for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
             for(int k = 0; k < p; k++)
                 b->grad[j * p + k] += c->grad[i * p + k] * a->data[jj];

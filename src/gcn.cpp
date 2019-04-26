@@ -1,5 +1,5 @@
 #include "gcn.h"
-#include "cycletimer.h"
+#include "timer.h"
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -142,11 +142,11 @@ void GCN::run() {
     int epoch = 1;
     float total_time = 0.0;
     for(; epoch <= params.epochs; epoch++) {
-        float t1 = currentSeconds();
         float train_loss, train_acc, val_loss, val_acc;
+        START_CLOCK(train);
         std::tie(train_loss, train_acc) = train_epoch();
         std::tie(val_loss, val_acc) = eval(2);
-        float elapsed = currentSeconds() - t1;
+        float elapsed = GET_CLOCK(train);
         total_time += elapsed;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
             epoch, train_loss, train_acc, val_loss, val_acc, elapsed);
@@ -164,9 +164,9 @@ void GCN::run() {
     }
     printf("Average time per epoch: %.5fs\n", total_time / std::min(epoch, params.epochs));
 
-    float t1 = currentSeconds();
     float test_loss, test_acc;
+    START_CLOCK(test);
     std::tie(test_loss, test_acc) = eval(3);
-    float elapsed = currentSeconds() - t1;
+    float elapsed = GET_CLOCK(test);
     printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed);
 }
