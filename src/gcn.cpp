@@ -64,7 +64,7 @@ void GCN::set_input(bool training) {
     }
     const int threshold = int(params.dropout * RAND_MAX);
     float scale = 1 / (1 - params.dropout);
-    for (int i = 0; i < input->size(); i++) {
+    for (int i = 0; i < input->data.size(); i++) {
         bool drop = rand() < threshold;
         input->data[i] = drop ? 0 : data->feature_value[i] * scale;
     }
