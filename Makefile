@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-O3 -std=c++11 -Wall -Wno-sign-compare -Wno-unused-variable
+CXXFLAGS=-O3 -std=c++11 -Wall -Wno-sign-compare -Wno-unused-variable -Wno-unknown-pragmas
 LDFLAGS=-lm
 CXXFILES=src/gcn.cpp src/optim.cpp src/module.cpp src/variable.cpp src/parser.cpp
 HFILES=src/gcn.h src/optim.h src/module.h src/variable.h src/sparse.h src/parser.h src/timer.h

@@ -1,8 +1,9 @@
 #include "module.h"
 #include <cstdlib>
 #include <cmath>
-
+#ifdef OMP
 #include <omp.h>
+#endif
 
 Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p):
     a(a), b(b), c(c), m(m), n(n), p(p) {}
@@ -19,13 +20,23 @@ void Matmul::forward(bool training) {
 void Matmul::backward() {
     a->zero_grad();
     b->zero_grad();
-    //#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for(int i = 0; i < m; i++)
         for(int j = 0; j < n; j++)
             for(int k = 0; k < p; k++) {
                 a->grad[i * n + j] += c->grad[i * p + k] * b->data[j * p + k];
+                #ifdef OMP
+                b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
+                #else
                 b->grad[j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
+                #endif
             }
+    #ifdef OMP
+    #pragma omp parallel for
+    for(int i = 0; i < b->grad.size(); i++)
+        for(int thread = 0; thread < omp_get_num_threads(); thread++)
+            b->grad[i] += b->local_grad[thread][i];
+    #endif
 }
 
 SparseMatmul::SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *sp, int m, int n, int p):
@@ -45,13 +56,23 @@ void SparseMatmul::forward(bool training) {
 void SparseMatmul::backward() {
     b->zero_grad();
     int row = 0;
-    //#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for(int i = 0; i < sp->indptr.size() - 1; i++)
         for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
             for(int k = 0; k < p; k++)
+                #ifdef OMP
+                b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[jj];
+                #else
                 b->grad[j * p + k] += c->grad[i * p + k] * a->data[jj];
+                #endif
         }
+    #ifdef OMP
+    #pragma omp parallel for
+    for(int i = 0; i < b->grad.size(); i++)
+        for(int thread = 0; thread < omp_get_num_threads(); thread++)
+            b->grad[i] += b->local_grad[thread][i];
+    #endif
 }
 
 GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
@@ -59,7 +80,7 @@ GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
 
 void GraphSum::forward(bool training) {
     out->zero();
-    //#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for(int src = 0; src < graph->indptr.size() - 1; src++)
         for(int i = graph->indptr[src]; i < graph->indptr[src + 1]; i++) {
             int dst = graph->indices[i];
@@ -67,7 +88,8 @@ void GraphSum::forward(bool training) {
                 (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
             );
             for(int j = 0; j < dim; j++)
-                out->data[dst * dim + j] += coef * in->data[src * dim + j];
+                // This only works for undirected graphs. Should be out[dst] += coef * in[src]
+                out->data[src * dim + j] += coef * in->data[dst * dim + j];
         }
 }
 

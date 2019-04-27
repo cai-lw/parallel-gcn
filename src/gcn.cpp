@@ -18,7 +18,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     input = &variables.back();
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var1 = &variables.back();
-    variables.emplace_back(params.input_dim * params.hidden_dim);
+    variables.emplace_back(params.input_dim * params.hidden_dim, true, true);
     Variable *layer1_weight = &variables.back();
     layer1_weight->glorot(params.input_dim, params.hidden_dim);
     // sparsematmul
@@ -33,7 +33,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     modules.push_back(new Dropout(layer1_var2, params.dropout));
     variables.emplace_back(params.num_nodes * params.output_dim);
     Variable *layer2_var1 = &variables.back();
-    variables.emplace_back(params.hidden_dim * params.output_dim);
+    variables.emplace_back(params.hidden_dim * params.output_dim, true, true);
     Variable *layer2_weight = &variables.back();
     layer2_weight->glorot(params.hidden_dim, params.output_dim);
     // dense matrix multiply
