@@ -1,4 +1,4 @@
-CXX=g++
+CXX=g++-8
 CXXFLAGS=-O3 -std=c++11 -Wall -Wno-sign-compare -Wno-unused-variable -Wno-unknown-pragmas
 LDFLAGS=-lm
 CXXFILES=src/gcn.cpp src/optim.cpp src/module.cpp src/variable.cpp src/parser.cpp

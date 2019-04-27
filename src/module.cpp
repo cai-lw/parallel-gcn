@@ -111,9 +111,10 @@ CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, in
     logits(logits), truth(truth), loss(loss), num_classes(num_classes) {}
 
 void CrossEntropyLoss::forward(bool training) {
-    *loss = 0;
+    float total_loss = 0;
     int count = 0;
     if(training) logits->zero_grad();
+    #pragma omp parallel for schedule(static) reduction(+:total_loss) reduction(+:count)
     for(int i = 0; i < logits->data.size() / num_classes; i++) {
         if (truth[i] < 0) continue;
         count++;
@@ -121,7 +122,7 @@ void CrossEntropyLoss::forward(bool training) {
         float sum_exp = 0.0;
         for(int j = 0; j < num_classes; j++)
             sum_exp += expf(logit[j]);
-        *loss += logf(sum_exp) - logit[truth[i]];
+        total_loss += logf(sum_exp) - logit[truth[i]];
 
         if(training) {
             for(int j = 0; j < num_classes; j++) {
@@ -131,10 +132,11 @@ void CrossEntropyLoss::forward(bool training) {
             logits->grad[i * num_classes + truth[i]] -= 1.0;
         }
     }
-    *loss /= count;
+    *loss = total_loss / count;
     if(training)
-        for(auto &g: logits->grad)
-            g /= count;
+        #pragma omp parallel for schedule(static)
+        for(int i = 0; i < logits->grad.size(); i++)
+            logits->grad[i] /= count;
 }
 
 void CrossEntropyLoss::backward() {
@@ -150,6 +152,7 @@ ReLU::~ReLU(){
 }
 
 void ReLU::forward(bool training) {
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < in->data.size(); i++) {
         bool keep = in->data[i] > 0;
         if (training) mask[i] = keep;
@@ -158,6 +161,7 @@ void ReLU::forward(bool training) {
 }
 
 void ReLU::backward() {
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < in->data.size(); i++)
         if (!mask[i]) in->grad[i] = 0;
 }

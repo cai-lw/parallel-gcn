@@ -34,8 +34,11 @@ void Variable::zero() {
 
 void Variable::zero_grad() {
     std::fill(grad.begin(), grad.end(), 0);
-    for(auto &v: local_grad)
-        std::fill(v.begin(), v.end(), 0);
+    #ifdef OMP
+    #pragma omp parallel for schedule(static)
+    for(int i = 0; i < local_grad.size(); i++)
+        std::fill(local_grad[i].begin(), local_grad[i].end(), 0);
+    #endif
 }
 
 void Variable::print(int col) {
