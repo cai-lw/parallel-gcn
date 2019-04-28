@@ -1,4 +1,5 @@
 #include "gcn.h"
+#include "rand.h"
 #include "timer.h"
 #include <cstdlib>
 #include <cstring>
@@ -10,6 +11,7 @@ GCNParams GCNParams::get_default() {
 }
 
 GCN::GCN(GCNParams params, GCNData *input_data) {
+    init_rand_state();
     this->params = params;
     data = input_data;
     modules.reserve(8);
@@ -68,7 +70,7 @@ void GCN::set_input(bool training) {
     float scale = 1 / (1 - params.dropout);
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < input->data.size(); i++) {
-        bool drop = rand() < threshold;
+        bool drop = RAND() < threshold;
         input->data[i] = drop ? 0 : data->feature_value[i] * scale;
     }
 }
