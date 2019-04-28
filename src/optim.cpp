@@ -24,6 +24,7 @@ void Adam::step(){
     step_count++;
     float step_size = params.lr * sqrtf(1 - powf(params.beta2, step_count)) / (1 - powf(params.beta1, step_count));
     for (auto &var: vars) {
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < var.size(); i++) {
             float grad = (*var.grad)[i];
             if (var.decay) grad += params.weight_decay * (*var.data)[i];

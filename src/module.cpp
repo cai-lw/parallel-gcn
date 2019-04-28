@@ -1,4 +1,5 @@
 #include "module.h"
+#include "rand.h"
 #include <cstdlib>
 #include <cmath>
 #ifdef OMP
@@ -180,8 +181,9 @@ void Dropout::forward(bool training) {
     if (!training) return;
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < in->data.size(); i++) {
-        bool keep = rand() >= threshold;
+        bool keep = RAND() >= threshold;
         mask[i] = keep;
         in->data[i] *= mask[i] ? scale : 0;
     }
@@ -189,6 +191,7 @@ void Dropout::forward(bool training) {
 
 void Dropout::backward() {
     float scale = 1 / (1 - p);
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < in->data.size(); i++)
         in->grad[i] *= mask[i] ? scale : 0;
 }

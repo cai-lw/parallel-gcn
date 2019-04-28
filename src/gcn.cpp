@@ -1,4 +1,5 @@
 #include "gcn.h"
+#include "rand.h"
 #include "timer.h"
 #include <cstdlib>
 #include <cstring>
@@ -12,6 +13,7 @@ GCNParams GCNParams::get_default() {
 
 
 GCN::GCN(GCNParams params, GCNData *input_data) {
+    init_rand_state();
     this->params = params;
     data = input_data;
     modules.reserve(8);
@@ -61,24 +63,29 @@ GCN::~GCN(){
 
 void GCN::set_input(bool training) {
     if (!training) {
-        std::copy(data->feature_value.begin(), data->feature_value.end(), input->data.begin());
+        #pragma omp parallel for schedule(static)
+        for (int i = 0; i < input->data.size(); i++)
+            input->data[i] = data->feature_value[i];
         return;
     }
     const int threshold = int(params.dropout * RAND_MAX);
     float scale = 1 / (1 - params.dropout);
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < input->data.size(); i++) {
-        bool drop = rand() < threshold;
+        bool drop = RAND() < threshold;
         input->data[i] = drop ? 0 : data->feature_value[i] * scale;
     }
 }
 
 void GCN::set_truth(int current_split) {
+    #pragma omp parallel for schedule(static)
     for(int i = 0; i < params.num_nodes; i++)
         truth[i] = data->split[i] == current_split ? data->label[i] : -1;
 }
 
 float GCN::get_accuracy() {
     int wrong = 0, total = 0;
+    #pragma omp parallel for schedule(static) reduction(+:total) reduction(+:wrong)
     for(int i = 0; i < params.num_nodes; i++) {
         if(truth[i] < 0) continue;
         total++;
@@ -94,8 +101,11 @@ float GCN::get_accuracy() {
 
 float GCN::get_l2_penalty() {
     float l2 = 0;
-    for (float x: variables[2].data)
+    #pragma omp parallel for schedule(static) reduction(+:l2)
+    for (int i = 0; i < variables[2].data.size(); i++) {
+        float x = variables[2].data[i];
         l2 += x * x;
+    }
     return params.weight_decay * l2 / 2;
 }
 
