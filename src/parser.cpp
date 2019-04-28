@@ -115,8 +115,11 @@ void vprint(std::vector<int> v){
 bool Parser::parse() {
     if (!isValidInput()) return false;
     this->parseGraph();
+    std::cout << "Parse Graph Succeeded." << endl;
     this->parseNode();
+    std::cout << "Parse Node Succeeded." << endl;
     this->parseSplit();
+    std::cout << "Parse Split Succeeded." << endl;
     return true;
 }
 

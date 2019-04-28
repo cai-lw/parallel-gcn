@@ -9,6 +9,8 @@ GCNParams GCNParams::get_default() {
     return {2708, 1433, 16, 7, 0.5, 0.01, 5e-4, 200, 10};
 }
 
+
+
 GCN::GCN(GCNParams params, GCNData *input_data) {
     this->params = params;
     data = input_data;
