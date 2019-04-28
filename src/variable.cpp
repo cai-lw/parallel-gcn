@@ -24,16 +24,21 @@ Variable::Variable(int size, bool requires_grad, bool thread_local_grad):
 
 void Variable::glorot(int in_size, int out_size) {
     float range = sqrtf(6.0f / (in_size + out_size));
+    #pragma omp parallel for schedule(static)
     for(int i = 0; i < data.size(); i++)
         data[i] = (float(rand()) / RAND_MAX - 0.5) * range * 2;
 }
 
 void Variable::zero() {
-    std::fill(data.begin(), data.end(), 0);
+    #pragma omp parallel for schedule(static)
+    for(int i = 0; i < data.size(); i++)
+        data[i] = 0;
 }
 
 void Variable::zero_grad() {
-    std::fill(grad.begin(), grad.end(), 0);
+    #pragma omp parallel for schedule(static)
+    for(int i = 0; i < grad.size(); i++)
+        grad[i] = 0;
     #ifdef OMP
     #pragma omp parallel for schedule(static)
     for(int i = 0; i < local_grad.size(); i++)
