@@ -46,28 +46,26 @@ SparseMatmul::SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *s
 void SparseMatmul::forward(bool training) {
     c->zero();
     #pragma omp parallel for schedule(static)
-    for(int i = 0; i < sp->indptr.size() - 1; i++)
-        for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
-            int j = sp->indices[jj];
-            for(int k = 0; k < p; k++)
-                c->data[i * p + k] += a->data[jj] * b->data[j * p + k];
-        }
+    for(int idx = 0; idx < sp->rows.size(); idx++){
+        int i = sp->rows[idx], j = sp->cols[idx];
+        for(int k = 0; k < p; k++)
+            c->data[i * p + k] += a->data[idx] * b->data[j * p + k];
+    }
 }
 
 void SparseMatmul::backward() {
     b->zero_grad();
     int row = 0;
     #pragma omp parallel for schedule(static)
-    for(int i = 0; i < sp->indptr.size() - 1; i++)
-        for(int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
-            int j = sp->indices[jj];
-            for(int k = 0; k < p; k++)
-                #ifdef OMP
-                b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[jj];
-                #else
-                b->grad[j * p + k] += c->grad[i * p + k] * a->data[jj];
-                #endif
-        }
+    for(int idx = 0; idx < sp->rows.size(); idx++){
+        int i = sp->rows[idx], j = sp->cols[idx];
+        for(int k = 0; k < p; k++)
+            #ifdef OMP
+            b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[idx];
+            #else
+            b->grad[j * p + k] += c->grad[i * p + k] * a->data[idx];
+            #endif
+    }
     #ifdef OMP
     #pragma omp parallel for
     for(int i = 0; i < b->grad.size(); i++)
@@ -82,30 +80,24 @@ GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim):
 void GraphSum::forward(bool training) {
     out->zero();
     #pragma omp parallel for schedule(static)
-    for(int src = 0; src < graph->indptr.size() - 1; src++)
-        for(int i = graph->indptr[src]; i < graph->indptr[src + 1]; i++) {
-            int dst = graph->indices[i];
-            float coef = 1.0 / sqrtf(
-                (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
-            );
-            for(int j = 0; j < dim; j++)
-                // This only works for undirected graphs. Should be out[dst] += coef * in[src]
-                out->data[src * dim + j] += coef * in->data[dst * dim + j];
-        }
+    for(int idx = 0; idx < graph->rows.size(); idx++) {
+        int src = graph->rows[idx], dst = graph->cols[idx];
+        float coef = 1.0 / sqrtf(graph->ncol[src] * graph->ncol[dst]);
+        for(int j = 0; j < dim; j++)
+            // out->data[src * dim + j] += coef * in->data[dst * dim + j];
+            out->data[dst * dim + j] += coef * in->data[src * dim + j];
+    }
 }
 
 void GraphSum::backward() {
     in->zero_grad();
     #pragma omp parallel for schedule(static)
-    for(int src = 0; src < graph->indptr.size() - 1; src++)
-        for(int i = graph->indptr[src]; i < graph->indptr[src + 1]; i++) {
-            int dst = graph->indices[i];
-            float coef = 1.0 / sqrtf(
-                (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
-            );
-            for(int j = 0; j < dim; j++)
-                in->grad[src * dim + j] += coef * out->grad[dst * dim + j];
-        }
+    for(int idx = 0; idx < graph->rows.size(); idx++){
+        int src = graph->rows[idx], dst = graph->cols[idx];
+        float coef = 1.0 / sqrtf(graph->ncol[src] * graph->ncol[dst]);
+        for(int j = 0; j < dim; j++)
+            in->grad[src * dim + j] += coef * out->grad[dst * dim + j];
+    }
 }
 
 CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes):

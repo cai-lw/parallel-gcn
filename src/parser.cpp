@@ -19,7 +19,6 @@ Parser::Parser(GCNParams *gcnParams, GCNData *gcnData, std::string graph_name) {
 void Parser::parseGraph() {
     auto &graph_sparse_index = this->gcnData->graph;
 
-    graph_sparse_index.indptr.push_back(0);
     int node = 0;
     while(true) {
         std::string line;
@@ -27,18 +26,20 @@ void Parser::parseGraph() {
         if (graph_file.eof()) break;
         
         // Implicit self connection
-        graph_sparse_index.indices.push_back(node);
-        graph_sparse_index.indptr.push_back(graph_sparse_index.indptr.back() + 1);
-        node++;
+        graph_sparse_index.cols.push_back(node);
+        graph_sparse_index.rows.push_back(node);
+        graph_sparse_index.ncol.push_back(1);
 
         std::istringstream ss(line);
         while (true) {
             int neighbor;
             ss >> neighbor;
             if (ss.fail()) break;
-            graph_sparse_index.indices.push_back(neighbor);
-            graph_sparse_index.indptr.back() += 1;
+            graph_sparse_index.cols.push_back(neighbor);
+            graph_sparse_index.rows.push_back(node);
+            graph_sparse_index.ncol.back() += 1;
         }
+        node++;
     }
     
     gcnParams->num_nodes = node;
@@ -53,14 +54,11 @@ void Parser::parseNode() {
     auto &feature_val = this->gcnData->feature_value;
     auto &labels = this->gcnData->label;
 
-    feature_sparse_index.indptr.push_back(0);
-
-    int max_idx = 0, max_label = 0;
+    int node = 0, max_idx = 0, max_label = 0;
     while(true) {
         std::string line;
         getline(svmlight_file, line);
         if (svmlight_file.eof()) break;
-        feature_sparse_index.indptr.push_back(feature_sparse_index.indptr.back());
         std::istringstream ss(line);
 
         int label = -1;
@@ -83,14 +81,15 @@ void Parser::parseNode() {
             kv_ss >> k >> col >> v;
 
             feature_val.push_back(v);
-            feature_sparse_index.indices.push_back(k);
-            feature_sparse_index.indptr.back() += 1;
+            feature_sparse_index.cols.push_back(k);
+            feature_sparse_index.rows.push_back(node);
             feature_sum += v;
             max_idx = max(max_idx, k);
         }
         // Normalize the feature vector. Each vector should sum to one
         for (int i = feature_begin; i < feature_val.size(); i++)
             feature_val[i] /= feature_sum;
+        node++;
     }
     gcnParams->input_dim = max_idx + 1;
     gcnParams->output_dim = max_label + 1;

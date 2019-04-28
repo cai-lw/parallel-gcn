@@ -11,8 +11,9 @@
  */
 class SparseIndex {
 public:
-    std::vector<int> indices;
-    std::vector<int> indptr;
+    std::vector<int> rows;
+    std::vector<int> cols;
+    std::vector<int> ncol;
     void print();
 };
 

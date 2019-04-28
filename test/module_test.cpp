@@ -25,8 +25,8 @@ TEST_CASE("Matrix multiplication") {
 
     SECTION("Sparse") {
         SparseIndex sp;
-        sp.indices = {0, 1, 2, 0, 1, 2};
-        sp.indptr = {0, 3, 6};
+        sp.cols = {0, 1, 2, 0, 1, 2};
+        sp.rows = {0, 0, 0, 1, 1, 1};
         SparseMatmul sparse_matmul(&a, &b, &c, &sp, 2, 3, 2);
         sparse_matmul.forward(true);
         REQUIRE(allclose(c.data, c_ref));
@@ -55,11 +55,12 @@ TEST_CASE("Cross entropy") {
 }
 
 TEST_CASE("Graph sum") {
-    SparseIndex graph;                          // 0 - 1
-    graph.indices = {1, 2, 3, 0, 2, 0, 1, 0};   // | \ |
-    graph.indptr = {0, 3, 5, 7, 8};             // 3   2
+    SparseIndex graph;                       // 0 - 1
+    graph.cols = {1, 2, 3, 0, 2, 0, 1, 0};   // | \ |
+    graph.rows = {0, 0, 0, 1, 1, 2, 2, 3};   // 3   2
+    graph.ncol = {3, 2, 2, 1};
 
-    Variable a(8), b(8);
+    Variable a(4), b(4);
     std::vector<float> a_ref = {4.0, 3.0, 2.0, 1.0};
     std::vector<float> b_ref = {
         3.0f / sqrtf(6) + 2.0f / sqrtf(6) + 1.0f / sqrtf(3),

@@ -16,7 +16,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     data = input_data;
     modules.reserve(8);
     variables.reserve(8);
-    variables.emplace_back(data->feature_index.indices.size(), false);
+    variables.emplace_back(data->feature_value.size(), false);
     input = &variables.back();
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var1 = &variables.back();
