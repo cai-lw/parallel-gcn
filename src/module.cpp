@@ -120,9 +120,13 @@ void CrossEntropyLoss::forward(bool training) {
         if (truth[i] < 0) continue;
         count++;
         float* logit = &logits->data[i * num_classes];
-        float sum_exp = 0.0;
+        float max_logit = -1e30, sum_exp = 0;
         for(int j = 0; j < num_classes; j++)
+            max_logit = fmax(max_logit, logit[j]);
+        for(int j = 0; j < num_classes; j++) {
+            logit[j] -= max_logit;
             sum_exp += expf(logit[j]);
+        }
         total_loss += logf(sum_exp) - logit[truth[i]];
 
         if(training) {
