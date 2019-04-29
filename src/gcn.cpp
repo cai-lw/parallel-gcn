@@ -162,7 +162,6 @@ void GCN::run() {
         total_time += elapsed;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
             epoch, train_loss, train_acc, val_loss, val_acc, elapsed);
-        
         loss_history.push_back(val_loss);
         if(params.early_stopping > 0 && epoch >= params.early_stopping) {
             float recent_loss = 0.0;
