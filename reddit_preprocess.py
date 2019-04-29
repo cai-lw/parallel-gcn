@@ -135,17 +135,18 @@ graph_file.close()
 
 split_file = open(prefix + '.split', "w")
 split_dict = {}
+train_id_set = set(train_ids)
+val_id_set = set(val_ids)
+test_id_set = set(test_ids)
 for i, node in enumerate(G.node):
     split = 0
-    if node in train_ids:
+    if node in train_id_set:
         split = 1
-    elif node in val_ids:
+    elif node in val_id_set:
         split = 2
-    elif node in test_ids:
+    elif node in test_id_set:
         split = 3
     split_dict[name_to_id[node]] = split
-    if i % 1000 == 0:
-        print(i)
     
 for i in range(len(split_dict)):
     split = split_dict[i]
@@ -160,7 +161,7 @@ split_file.close()
 final_features = []
 final_labels = []
 for i, id in enumerate(ids):
-    final_features.append(feats[id_map[id]])l
+    final_features.append(feats[id_map[id]])
     final_labels.append(labels[i])
     from sklearn import datasets
 datasets.dump_svmlight_file(final_features, final_labels, prefix + ".svmlight")
