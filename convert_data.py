@@ -22,6 +22,16 @@ def sample_mask(idx, l):
     return np.array(mask, dtype=np.bool)
 
 
+def preprocess_features(features):
+    """Row-normalize feature matrix and convert to tuple representation"""
+    rowsum = np.array(features.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    features = r_mat_inv.dot(features)
+    return features
+
+
 def load_data(dataset_str):
     """
     Loads input data from gcn/data directory
@@ -68,6 +78,7 @@ def load_data(dataset_str):
 
     features = sp.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
+    features = preprocess_features(features)
 
     labels = np.vstack((ally, ty))
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
