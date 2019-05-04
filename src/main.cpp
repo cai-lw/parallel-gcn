@@ -27,7 +27,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-
     GCN gcn(params, &data);
     gcn.run();
     return EXIT_SUCCESS;

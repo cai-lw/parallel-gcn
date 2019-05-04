@@ -19,10 +19,11 @@ void Matmul::forward(bool training) {
             for (int j = 0; j < n; j++) {
                 float x = a->data[i * n + j];
                 __m256 x_v = _mm256_set1_ps(x);
-                for (int k = 0; k < p; k += 4) {
+                for (int k = 0; k < p; k += 8) {
                     __m256 data = _mm256_load_ps(&b->data[j * p + k]);
-                    __m256 res = _mm256_add_ps(x_v, data);
-
+                    __m256 original = _mm256_load_ps(&c->data[i * p + k]);
+                    __m256 res = _mm256_mul_ps(x_v, data);
+                    res = _mm256_add_ps(res, original);
                     _mm256_store_ps(&c->data[i * p + k], res);
                 }
             }
@@ -32,7 +33,7 @@ void Matmul::forward(bool training) {
 #pragma omp parallel for schedule(static)
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; j++) {
-                for (int k = 0; k < p; k += 4) {
+                for (int k = 0; k < p; k++) {
                     c->data[i * p + k] += a->data[i * n + j] * b->data[j * p + k];
                 }
             }

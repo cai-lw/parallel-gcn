@@ -87,7 +87,7 @@ void Parser::parseNode() {
         }
     }
     gcnParams->input_dim = max_idx + 1;
-    gcnParams->output_dim = max_label + 1;
+    gcnParams->output_dim = ((max_label + 1) + 7) / 8 * 8; // ceil to nearest multiple of 8
 }
 
 void Parser::parseSplit() {
