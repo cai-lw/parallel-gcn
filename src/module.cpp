@@ -218,11 +218,12 @@ void ReLU::backward() {
 Dropout::Dropout(Variable *in, float p) {
     this->in = in;
     this->p = p;
-    mask = new bool[in->data.size()];
+    if (!in->grad.empty()) mask = new bool[in->data.size()];
+    else mask = nullptr;
 }
 
 Dropout::~Dropout() {
-    delete[] mask;
+    if (mask) delete[] mask;
 }
 
 void Dropout::forward(bool training) {
@@ -236,12 +237,13 @@ void Dropout::forward(bool training) {
 #endif
     for (int i = 0; i < in->data.size(); i++) {
         bool keep = RAND() >= threshold;
-        mask[i] = keep;
-        in->data[i] *= mask[i] ? scale : 0;
+        in->data[i] *= keep ? scale : 0;
+        if (mask) mask[i] = keep;
     }
 }
 
 void Dropout::backward() {
+    if (!mask) return;
     float scale = 1 / (1 - p);
 #ifdef SIMD
 #pragma omp parallel for simd schedule(static)
