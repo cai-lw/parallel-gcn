@@ -62,7 +62,7 @@ GCN::~GCN(){
 
 void GCN::set_input() {
     #ifdef SIMD
-    #pragma omp parallel simd for schedule(static)
+    #pragma omp parallel for simd schedule(static)
     #else
     #pragma omp parallel for schedule(static)
     #endif
@@ -72,7 +72,7 @@ void GCN::set_input() {
 
 void GCN::set_truth(int current_split) {
     #ifdef SIMD
-    #pragma omp parallel simd for schedule(static)
+    #pragma omp parallel for simd schedule(static)
     #else
     #pragma omp parallel for schedule(static)
     #endif
@@ -99,7 +99,7 @@ float GCN::get_accuracy() {
 float GCN::get_l2_penalty() {
     float l2 = 0;
     #ifdef SIMD
-    #pragma omp parallel simd for schedule(static) reduction(+:l2)
+    #pragma omp parallel for simd schedule(static) reduction(+:l2)
     #else
     #pragma omp parallel for schedule(static) reduction(+:l2)
     #endif
