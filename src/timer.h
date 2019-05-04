@@ -21,10 +21,8 @@ public:
     }
     ~Timer()
     {
-#ifdef debug
         double elapsed = (double(std::clock() - start_) / double(CLOCKS_PER_SEC));
         std::cout << name_ << ": " << int(elapsed * 1000) << "ms" << std::endl;
-#endif
     }
 private:
     std::string name_;
