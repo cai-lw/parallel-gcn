@@ -12,18 +12,35 @@ Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p):
 
 void Matmul::forward(bool training) {
     c->zero();
-    Timer("Matmul::forward");
+    {
+        Timer("Matmul::forward no simd");
 #pragma omp parallel for schedule(static)
-    for(int i = 0; i < m; i++)
-        for(int j = 0; j < n; j++) {
-            float x = a->data[i * n + j];
-            __m256 x_v = _mm256_set1_ps(x);
-            for (int k = 0; k < p; k += 4) {
-                __m256 data = _mm256_load_ps(&b->data[j * p + k]);
-                __m256 res = _mm256_add_ps(x_v, data);
-                _mm256_store_ps(&c->data[i * p + k], res);
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++) {
+                float x = a->data[i * n + j];
+                __m256 x_v = _mm256_set1_ps(x);
+                for (int k = 0; k < p; k += 4) {
+                    __m256 data = _mm256_load_ps(&b->data[j * p + k]);
+                    __m256 res = _mm256_add_ps(x_v, data);
+                    _mm256_store_ps(&c->data[i * p + k], res);
+                }
             }
-        }
+    }
+
+    {
+        Timer("Matmul::forward simd");
+#pragma omp parallel for schedule(static)
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++) {
+                float x = a->data[i * n + j];
+                __m256 x_v = _mm256_set1_ps(x);
+                for (int k = 0; k < p; k += 4) {
+                    __m256 data = _mm256_load_ps(&b->data[j * p + k]);
+                    __m256 res = _mm256_add_ps(x_v, data);
+                    _mm256_store_ps(&c->data[i * p + k], res);
+                }
+            }
+    }
 }
 
 void Matmul::backward() {
