@@ -17,8 +17,10 @@ omp: src/main.cpp $(CXXFILES) $(HFILES)
 	$(CXX) $(CXXFLAGS) $(OMP) -o gcn-omp $(CXXFILES) src/main.cpp $(LDFLAGS)
 
 simd: src/main.cpp $(CXXFILES) $(HFILES)
-	$(CXX) $(CXXFLAGS) $(SIMD) -o gcn-simd $(CXXFILES) src/main.cpp $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(OMP) $(SIMD) -o gcn-simd $(CXXFILES) src/main.cpp $(LDFLAGS)
 
+simd_omp: src/main.cpp $(CXXFILES) $(HFILES)
+	$(CXX) $(CXXFLAGS) $(OMP) -o gcn-simd-omp $(CXXFILES) src/main.cpp $(LDFLAGS)
 
 test: $(CXXFILES) $(HFILES) $(TEST_CXXFILES) $(TEST_HFILES)
 	$(CXX) $(CXXFLAGS) -Iinclude -o gcn-test $(CXXFILES) $(TEST_CXXFILES) test/main.cpp $(LDFLAGS)
