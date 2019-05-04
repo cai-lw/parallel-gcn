@@ -28,8 +28,7 @@ class GCN {
     std::vector<int> truth;
     Adam optimizer;
     float loss;
-    std::vector<float> loss_history;
-    void set_input(bool training);
+    void set_input();
     void set_truth(int current_split);
     float get_accuracy();
     float get_l2_penalty();

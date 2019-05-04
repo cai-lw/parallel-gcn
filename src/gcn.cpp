@@ -10,8 +10,6 @@ GCNParams GCNParams::get_default() {
     return {2708, 1433, 16, 7, 0.5, 0.01, 5e-4, 200, 10};
 }
 
-
-
 GCN::GCN(GCNParams params, GCNData *input_data) {
     init_rand_state();
     this->params = params;
@@ -20,6 +18,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     variables.reserve(8);
     variables.emplace_back(data->feature_index.indices.size(), false);
     input = &variables.back();
+    modules.push_back(new Dropout(input, params.dropout));
     variables.emplace_back(params.num_nodes * params.hidden_dim);
     Variable *layer1_var1 = &variables.back();
     variables.emplace_back(params.input_dim * params.hidden_dim, true, true);
@@ -61,24 +60,22 @@ GCN::~GCN(){
         delete m;
 }
 
-void GCN::set_input(bool training) {
-    if (!training) {
-        #pragma omp parallel for schedule(static)
-        for (int i = 0; i < input->data.size(); i++)
-            input->data[i] = data->feature_value[i];
-        return;
-    }
-    const int threshold = int(params.dropout * RAND_MAX);
-    float scale = 1 / (1 - params.dropout);
+void GCN::set_input() {
+    #ifdef SIMD
+    #pragma omp parallel for simd schedule(static)
+    #else
     #pragma omp parallel for schedule(static)
-    for (int i = 0; i < input->data.size(); i++) {
-        bool drop = RAND() < threshold;
-        input->data[i] = drop ? 0 : data->feature_value[i] * scale;
-    }
+    #endif
+    for (int i = 0; i < input->data.size(); i++)
+        input->data[i] = data->feature_value[i];
 }
 
 void GCN::set_truth(int current_split) {
+    #ifdef SIMD
+    #pragma omp parallel for simd schedule(static)
+    #else
     #pragma omp parallel for schedule(static)
+    #endif
     for(int i = 0; i < params.num_nodes; i++)
         truth[i] = data->split[i] == current_split ? data->label[i] : -1;
 }
@@ -101,7 +98,11 @@ float GCN::get_accuracy() {
 
 float GCN::get_l2_penalty() {
     float l2 = 0;
+    #ifdef SIMD
+    #pragma omp parallel for simd schedule(static) reduction(+:l2)
+    #else
     #pragma omp parallel for schedule(static) reduction(+:l2)
+    #endif
     for (int i = 0; i < variables[2].data.size(); i++) {
         float x = variables[2].data[i];
         l2 += x * x;
@@ -111,7 +112,7 @@ float GCN::get_l2_penalty() {
 
 std::pair<float, float> GCN::train_epoch() {
 //    START_CLOCK(SET_INPUT);
-    set_input(true);
+    set_input();
 //    END_CLOCK(SET_INPUT);
 
 //    START_CLOCK(SET_TRUTH);
@@ -141,7 +142,7 @@ std::pair<float, float> GCN::train_epoch() {
 }
 
 std::pair<float, float> GCN::eval(int current_split) {
-    set_input(false);
+    set_input();
     set_truth(current_split);
     for (auto m: modules)
         m->forward(false);
@@ -153,6 +154,7 @@ std::pair<float, float> GCN::eval(int current_split) {
 void GCN::run() {
     int epoch = 1;
     float total_time = 0.0;
+    std::vector<float> loss_history;
     for(; epoch <= params.epochs; epoch++) {
         float train_loss, train_acc, val_loss, val_acc;
         START_CLOCK(train);

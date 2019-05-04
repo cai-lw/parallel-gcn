@@ -28,18 +28,21 @@ void Matmul::backward() {
     b->zero_grad();
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < m; i++)
-        for (int j = 0; j < n; j++)
+        for (int j = 0; j < n; j++) {
+                float tmp = 0;
 #ifdef SIMD
-#pragma omp simd
+#pragma omp simd reduction(+:tmp)
 #endif
                 for (int k = 0; k < p; k++) {
-                    a->grad[i * n + j] += c->grad[i * p + k] * b->data[j * p + k];
+                    tmp += c->grad[i * p + k] * b->data[j * p + k];
 #ifdef OMP
                     b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
 #else
                     b->grad[j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
 #endif
                 }
+		a->grad[i * n + j] = tmp;
+        }
 #ifdef OMP
 #pragma omp parallel for
     for(int i = 0; i < b->grad.size(); i++)
@@ -141,8 +144,14 @@ void CrossEntropyLoss::forward(bool training) {
         count++;
         float *logit = &logits->data[i * num_classes];
         float max_logit = -1e30, sum_exp = 0;
+#ifdef SIMD
+#pragma omp simd reduction(max:max_logit)
+#endif
         for (int j = 0; j < num_classes; j++)
             max_logit = fmax(max_logit, logit[j]);
+#ifdef SIMD
+#pragma omp simd reduction(+:sum_exp)
+#endif
         for (int j = 0; j < num_classes; j++) {
             logit[j] -= max_logit;
             sum_exp += expf(logit[j]);
@@ -209,11 +218,12 @@ void ReLU::backward() {
 Dropout::Dropout(Variable *in, float p) {
     this->in = in;
     this->p = p;
-    mask = new bool[in->data.size()];
+    if (!in->grad.empty()) mask = new bool[in->data.size()];
+    else mask = nullptr;
 }
 
 Dropout::~Dropout() {
-    delete[] mask;
+    if (mask) delete[] mask;
 }
 
 void Dropout::forward(bool training) {
@@ -227,12 +237,13 @@ void Dropout::forward(bool training) {
 #endif
     for (int i = 0; i < in->data.size(); i++) {
         bool keep = RAND() >= threshold;
-        mask[i] = keep;
-        in->data[i] *= mask[i] ? scale : 0;
+        in->data[i] *= keep ? scale : 0;
+        if (mask) mask[i] = keep;
     }
 }
 
 void Dropout::backward() {
+    if (!mask) return;
     float scale = 1 / (1 - p);
 #ifdef SIMD
 #pragma omp parallel for simd schedule(static)
