@@ -49,7 +49,7 @@ GCN::GCN(GCNParams params, GCNData *input_data) {
     truth = std::vector<int>(params.num_nodes);
     // cross entropy loss
     modules.push_back(new CrossEntropyLoss(output, truth.data(), &loss, params.output_dim));
-    
+
     AdamParams adam_params = AdamParams::get_default();
     adam_params.lr = params.learning_rate;
     adam_params.weight_decay = params.weight_decay;
@@ -135,7 +135,71 @@ std::pair<float, float> GCN::train_epoch() {
 
 //    START_CLOCK(OPTIMIZE);
     optimizer.step();
-//    END_CLOCK(OPTIMIZE);
+//    #include <emmintrin.h>
+//#include <iostream>
+//#include <cmath>
+//using namespace std;
+//class Timer
+//{
+//public:
+//  Timer(const std::string& name)
+//    : name_ (name),
+//      start_ (std::clock())
+//    {
+//    }
+//  ~Timer()
+//    {
+//      double elapsed = (double(std::clock() - start_) / double(CLOCKS_PER_SEC));
+//      std::cout << name_ << ": " << int(elapsed * 1000) << "ms" << std::endl;
+//    }
+//private:
+//  std::string name_;
+//  std::clock_t start_;
+//};
+//
+//#define TIMER(name) Timer timer__(name);
+//
+//void normal(float* a, int N)
+//{
+//  for (int i = 0; i < N; ++i)
+//    a[i] = sqrt(a[i]);
+//}
+//
+//void sse(float* a, int N)
+//{
+//  // We assume N % 4 == 0.
+//  int nb_iters = N / 4;
+//  __m128* ptr = (__m128*)a;
+//
+//  for (int i = 0; i < nb_iters; ++i, ++ptr, a += 4)
+//    _mm_store_ps(a, _mm_sqrt_ps(*ptr));
+//}
+//
+//int main(int argc, char** argv) {                                                                                                                                                                                {
+//  if (argc != 2)
+//    return 1;
+//  int N = atoi(argv[1]);
+//
+//  float* a;
+//  posix_memalign((void**)&a, 16,  N * sizeof(float));
+//
+//  for (int i = 0; i < N; ++i)
+//    a[i] = 3141592.65358;
+//
+//  {
+//    TIMER("normal");
+//    normal(a, N);
+//  }
+//
+//  for (int i = 0; i < N; ++i)
+//    a[i] = 3141592.65358;
+//
+//  {
+//    TIMER("SSE");
+//    sse(a, N);
+//  }
+//}
+//}
 
     return {train_loss, train_acc};
 }

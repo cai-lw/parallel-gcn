@@ -1,6 +1,7 @@
 #ifndef MODULE_H
 #include "variable.h"
 #include "sparse.h"
+#include <immintrin.h>
 
 class Module {
 public:
