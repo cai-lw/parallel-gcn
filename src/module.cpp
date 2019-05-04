@@ -15,12 +15,11 @@ void Matmul::forward(bool training) {
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++) {
-            float tmp = a->data[i * n + j];
 #ifdef SIMD
 #pragma omp simd
 #endif
             for (int k = 0; k < p; k++)
-                c->data[i * p + k] += tmp * b->data[j * p + k];
+                c->data[i * p + k] += a->data[i * n + j] * b->data[j * p + k];
         }
 }
 
