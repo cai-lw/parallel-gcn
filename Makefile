@@ -17,7 +17,7 @@ omp-simd: src/main.cpp $(CXXFILES) $(HFILES)
 	$(CXX) $(CXXFLAGS) $(OMP) $(SIMD) -o gcn-omp-simd $(CXXFILES) src/main.cpp $(LDFLAGS)
 
 omp: src/main.cpp $(CXXFILES) $(HFILES)
-	$(CXX) $(CXXFLAGS) $(OMP) -o gcn-omp $(CXXFILES) src/main.cpp $(LDFLAGS)
+	$(CXX) -fno-tree-vectorize $(CXXFLAGS) $(OMP) -o gcn-omp $(CXXFILES) src/main.cpp $(LDFLAGS)
 
 
 

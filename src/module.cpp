@@ -16,7 +16,9 @@ void Matmul::forward(bool training) {
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++) {
             float tmp = a->data[i * n + j];
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int k = 0; k < p; k++)
                 c->data[i * p + k] += tmp * b->data[j * p + k];
         }
@@ -28,8 +30,10 @@ void Matmul::backward() {
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++)
+#ifdef SIMD
 #pragma omp simd
-                for (int k = 0; k < p; k++) {
+#endif
+            for (int k = 0; k < p; k++) {
                     a->grad[i * n + j] += c->grad[i * p + k] * b->data[j * p + k];
 #ifdef OMP
                     b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
@@ -54,7 +58,9 @@ void SparseMatmul::forward(bool training) {
     for (int i = 0; i < sp->indptr.size() - 1; i++)
         for (int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int k = 0; k < p; k++)
                 c->data[i * p + k] += a->data[jj] * b->data[j * p + k];
         }
@@ -67,7 +73,9 @@ void SparseMatmul::backward() {
     for (int i = 0; i < sp->indptr.size() - 1; i++)
         for (int jj = sp->indptr[i]; jj < sp->indptr[i + 1]; jj++) {
             int j = sp->indices[jj];
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int k = 0; k < p; k++)
 #ifdef OMP
                 b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[jj];
@@ -95,7 +103,9 @@ void GraphSum::forward(bool training) {
             float coef = 1.0 / sqrtf(
                     (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
             );
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int j = 0; j < dim; j++)
                 // This only works for undirected graphs. Should be out[dst] += coef * in[src]
                 out->data[src * dim + j] += coef * in->data[dst * dim + j];
@@ -111,7 +121,9 @@ void GraphSum::backward() {
             float coef = 1.0 / sqrtf(
                     (graph->indptr[src + 1] - graph->indptr[src]) * (graph->indptr[dst + 1] - graph->indptr[dst])
             );
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int j = 0; j < dim; j++)
                 in->grad[src * dim + j] += coef * out->grad[dst * dim + j];
         }
@@ -130,10 +142,14 @@ void CrossEntropyLoss::forward(bool training) {
         count++;
         float *logit = &logits->data[i * num_classes];
         float max_logit = -1e30, sum_exp = 0;
+#ifdef SIMD
 #pragma omp simd
+#endif
         for (int j = 0; j < num_classes; j++)
             max_logit = fmax(max_logit, logit[j]);
+#ifdef SIMD
 #pragma omp simd
+#endif
         for (int j = 0; j < num_classes; j++) {
             logit[j] -= max_logit;
             sum_exp += expf(logit[j]);
@@ -141,7 +157,9 @@ void CrossEntropyLoss::forward(bool training) {
         total_loss += logf(sum_exp) - logit[truth[i]];
 
         if (training) {
+#ifdef SIMD
 #pragma omp simd
+#endif
             for (int j = 0; j < num_classes; j++) {
                 float prob = expf(logit[j]) / sum_exp;
                 logits->grad[i * num_classes + j] = prob;
@@ -151,7 +169,11 @@ void CrossEntropyLoss::forward(bool training) {
     }
     *loss = total_loss / count;
     if (training)
+#ifdef SIMD
 #pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
         for (int i = 0; i < logits->grad.size(); i++)
             logits->grad[i] /= count;
 }
@@ -169,7 +191,11 @@ ReLU::~ReLU() {
 }
 
 void ReLU::forward(bool training) {
+#ifdef SIMD
 #pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for (int i = 0; i < in->data.size(); i++) {
         bool keep = in->data[i] > 0;
         if (training) mask[i] = keep;
@@ -178,7 +204,11 @@ void ReLU::forward(bool training) {
 }
 
 void ReLU::backward() {
+#ifdef SIMD
 #pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for (int i = 0; i < in->data.size(); i++)
         if (!mask[i]) in->grad[i] = 0;
 }
@@ -197,7 +227,11 @@ void Dropout::forward(bool training) {
     if (!training) return;
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
+#ifdef SIMD
 #pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for (int i = 0; i < in->data.size(); i++) {
         bool keep = RAND() >= threshold;
         mask[i] = keep;
@@ -207,7 +241,11 @@ void Dropout::forward(bool training) {
 
 void Dropout::backward() {
     float scale = 1 / (1 - p);
+#ifdef SIMD
 #pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for (int i = 0; i < in->data.size(); i++)
         in->grad[i] *= mask[i] ? scale : 0;
 }
