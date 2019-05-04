@@ -1,4 +1,6 @@
 #ifndef MODULE_H
+
+#include <immintrin.h>
 #include "variable.h"
 #include "sparse.h"
 
@@ -65,7 +67,7 @@ public:
 
 class Dropout: public Module {
     Variable *in;
-    bool *mask;
+    int *mask;
     float p;
 public:
     Dropout(Variable *in, float p);

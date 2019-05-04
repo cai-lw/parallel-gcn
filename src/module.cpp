@@ -2,7 +2,7 @@
 #include "rand.h"
 #include <cstdlib>
 #include <cmath>
-
+#include <immintrin.h>
 #ifdef OMP
 #include <omp.h>
 #endif
@@ -218,7 +218,7 @@ void ReLU::backward() {
 Dropout::Dropout(Variable *in, float p) {
     this->in = in;
     this->p = p;
-    if (!in->grad.empty()) mask = new bool[in->data.size()];
+    if (!in->grad.empty()) mask = new int[in->data.size()];
     else mask = nullptr;
 }
 
@@ -230,16 +230,29 @@ void Dropout::forward(bool training) {
     if (!training) return;
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
+
 #ifdef SIMD
-#pragma omp parallel for simd schedule(static)
+#pragma omp parallel for schedule(static)
+        for (int i = 0; i < in->data.size() / 8; i++) {
+            __m256i rand = gen_simd_rand();
+            __m256i threshold_v = _mm256_set1_epi32(threshold);
+            __m256 data = _mm256_load_ps(&in->data[8 * i]);
+            __m256i mask1 = _mm256_cmpgt_epi32(rand, threshold_v);
+            __m256 scale_v = _mm256_blendv_ps(_mm256_set1_ps(scale), _mm256_setzero_ps(), (__m256) mask1);
+            data = _mm256_mul_ps(data, scale_v);
+            _mm256_store_ps(&in->data[8 * i], data);
+            if (mask) {
+                _mm256_store_si256( (__m256i *)&mask[8 * i], mask1);
+            }
+        }
 #else
 #pragma omp parallel for schedule(static)
+        for (int i = 0; i < in->data.size(); i++) {
+            bool keep = RAND() >= threshold;
+            in->data[i] *= keep ? scale : 0;
+            if (mask) mask[i] = keep;
+        }
 #endif
-    for (int i = 0; i < in->data.size(); i++) {
-        bool keep = RAND() >= threshold;
-        in->data[i] *= keep ? scale : 0;
-        if (mask) mask[i] = keep;
-    }
 }
 
 void Dropout::backward() {
