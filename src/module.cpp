@@ -33,7 +33,7 @@ void Matmul::backward() {
 #ifdef SIMD
 #pragma omp simd
 #endif
-            for (int k = 0; k < p; k++) {
+                for (int k = 0; k < p; k++) {
                     a->grad[i * n + j] += c->grad[i * p + k] * b->data[j * p + k];
 #ifdef OMP
                     b->local_grad[omp_get_thread_num()][j * p + k] += c->grad[i * p + k] * a->data[i * n + j];
