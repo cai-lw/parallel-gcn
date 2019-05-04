@@ -141,14 +141,8 @@ void CrossEntropyLoss::forward(bool training) {
         count++;
         float *logit = &logits->data[i * num_classes];
         float max_logit = -1e30, sum_exp = 0;
-#ifdef SIMD
-#pragma omp simd
-#endif
         for (int j = 0; j < num_classes; j++)
             max_logit = fmax(max_logit, logit[j]);
-#ifdef SIMD
-#pragma omp simd
-#endif
         for (int j = 0; j < num_classes; j++) {
             logit[j] -= max_logit;
             sum_exp += expf(logit[j]);
