@@ -35,9 +35,7 @@ void Matmul::forward(bool training) {
                 float x = a->data[i * n + j];
                 __m256 x_v = _mm256_set1_ps(x);
                 for (int k = 0; k < p; k += 4) {
-                    __m256 data = _mm256_load_ps(&b->data[j * p + k]);
-                    __m256 res = _mm256_add_ps(x_v, data);
-                    _mm256_store_ps(&c->data[i * p + k], res);
+                    c->data[i * p + k] += a->data[i * n + j] * b->data[j * p + k];
                 }
             }
     }
