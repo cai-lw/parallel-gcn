@@ -1,5 +1,6 @@
 #ifndef RAND_H
 #include <cstdlib>
+#include <cstdint>
 #include "immintrin.h"
 #include <assert.h>
 
