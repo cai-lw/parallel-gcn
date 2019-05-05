@@ -27,23 +27,35 @@ void Variable::glorot(int in_size, int out_size) {
     float range = sqrtf(6.0f / (in_size + out_size));
     #pragma omp parallel for schedule(static)
     for(int i = 0; i < data.size(); i++)
-        data[i] = (float(RAND()) / RAND_MAX - 0.5) * range * 2;
+        data[i] = (float(RAND()) / MY_RAND_MAX - 0.5) * range * 2;
 }
 
 void Variable::zero() {
+    #ifdef SIMD
+    #pragma omp parallel for simd schedule(static)
+    #else
     #pragma omp parallel for schedule(static)
+    #endif
     for(int i = 0; i < data.size(); i++)
         data[i] = 0;
 }
 
 void Variable::zero_grad() {
+    #ifdef SIMD
+    #pragma omp parallel for simd schedule(static)
+    #else
     #pragma omp parallel for schedule(static)
+    #endif
     for(int i = 0; i < grad.size(); i++)
         grad[i] = 0;
     #ifdef OMP
     #pragma omp parallel for schedule(static)
     for(int i = 0; i < local_grad.size(); i++)
-        std::fill(local_grad[i].begin(), local_grad[i].end(), 0);
+        #ifdef SIMD
+        #pragma omp simd
+        #endif
+        for(int j = 0; j < local_grad[i].size(); j++)
+            local_grad[i][j] = 0;
     #endif
 }
 
