@@ -23,7 +23,7 @@ void timer_start(timer_t t);
 float timer_stop(timer_t t);
 float timer_average(timer_t t);
 
-#define PRINT_TIMER_AVERAGE(T) printf(#T " average time: %.5fs\n", timer_average(T))
+#define PRINT_TIMER_AVERAGE(T) printf(#T " average time: %.3fms\n", timer_average(T) * 1000)
 
 #define TIMER_H
 #endif
