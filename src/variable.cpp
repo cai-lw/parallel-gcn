@@ -27,7 +27,7 @@ void Variable::glorot(int in_size, int out_size) {
     float range = sqrtf(6.0f / (in_size + out_size));
     #pragma omp parallel for schedule(static)
     for(int i = 0; i < data.size(); i++)
-        data[i] = (float(RAND()) / RAND_MAX - 0.5) * range * 2;
+        data[i] = (float(RAND()) / MY_RAND_MAX - 0.5) * range * 2;
 }
 
 void Variable::zero() {
