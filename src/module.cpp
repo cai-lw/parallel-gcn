@@ -255,15 +255,15 @@ void Dropout::forward(bool training) {
 #ifdef SIMD
 #pragma omp parallel for schedule(static)
         for (int i = 0; i < in->data.size() / 8; i++) {
-            __m256i rand = gen_simd_rand(omp_get_thread_num());
+            __m256i rand_v = gen_simd_rand(omp_get_thread_num());
             __m256i threshold_v = _mm256_set1_epi32(threshold);
-            __m256 data = _mm256_load_ps(&in->data[8 * i]);
-            __m256i mask1 = _mm256_cmpgt_epi32(rand, threshold_v);
+            __m256 data = _mm256_loadu_ps(&in->data[8 * i]);
+            __m256i mask1 = _mm256_cmpgt_epi32(rand_v, threshold_v);
             __m256 scale_v = _mm256_blendv_ps(_mm256_set1_ps(scale), _mm256_setzero_ps(), (__m256) mask1);
             data = _mm256_mul_ps(data, scale_v);
-            _mm256_store_ps(&in->data[8 * i], data);
+            _mm256_storeu_ps(&in->data[8 * i], data);
             if (mask) {
-                _mm256_store_si256( (__m256i *)&mask[8 * i], mask1);
+                _mm256_storeu_si256( (__m256i *)&mask[8 * i], mask1);
             }
         }
 #else
