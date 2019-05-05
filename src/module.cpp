@@ -49,7 +49,11 @@ void Matmul::backward() {
 		a->grad[i * n + j] = tmp;
         }
 #ifdef OMP
-#pragma omp parallel for
+#ifdef SIMD
+#pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for(int i = 0; i < b->grad.size(); i++)
         for(int thread = 0; thread < omp_get_num_threads(); thread++)
             b->grad[i] += b->local_grad[thread][i];
@@ -95,7 +99,11 @@ void SparseMatmul::backward() {
 #endif
         }
 #ifdef OMP
-#pragma omp parallel for
+#ifdef SIMD
+#pragma omp parallel for simd schedule(static)
+#else
+#pragma omp parallel for schedule(static)
+#endif
     for(int i = 0; i < b->grad.size(); i++)
         for(int thread = 0; thread < omp_get_num_threads(); thread++)
             b->grad[i] += b->local_grad[thread][i];
