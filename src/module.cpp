@@ -1,5 +1,6 @@
 #include "module.h"
 #include "rand.h"
+#include "timer.h"
 #include <cstdlib>
 #include <cmath>
 #include <immintrin.h>
@@ -11,6 +12,7 @@ Matmul::Matmul(Variable *a, Variable *b, Variable *c, int m, int n, int p) :
         a(a), b(b), c(c), m(m), n(n), p(p) {}
 
 void Matmul::forward(bool training) {
+    timer_start(TMR_MATMUL_FW);
     c->zero();
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < m; i++)
@@ -21,9 +23,11 @@ void Matmul::forward(bool training) {
             for (int k = 0; k < p; k++)
                 c->data[i * p + k] += a->data[i * n + j] * b->data[j * p + k];
         }
+    timer_stop(TMR_MATMUL_FW);
 }
 
 void Matmul::backward() {
+    timer_start(TMR_MATMUL_BW);
     a->zero_grad();
     b->zero_grad();
 #pragma omp parallel for schedule(static)
@@ -49,12 +53,14 @@ void Matmul::backward() {
         for(int thread = 0; thread < omp_get_num_threads(); thread++)
             b->grad[i] += b->local_grad[thread][i];
 #endif
+    timer_stop(TMR_MATMUL_BW);
 }
 
 SparseMatmul::SparseMatmul(Variable *a, Variable *b, Variable *c, SparseIndex *sp, int m, int n, int p) :
         a(a), b(b), c(c), sp(sp), m(m), n(n), p(p) {}
 
 void SparseMatmul::forward(bool training) {
+    timer_start(TMR_SPMATMUL_FW);
     c->zero();
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < sp->indptr.size() - 1; i++)
@@ -66,9 +72,11 @@ void SparseMatmul::forward(bool training) {
             for (int k = 0; k < p; k++)
                 c->data[i * p + k] += a->data[jj] * b->data[j * p + k];
         }
+    timer_stop(TMR_SPMATMUL_FW);
 }
 
 void SparseMatmul::backward() {
+    timer_start(TMR_SPMATMUL_BW);
     b->zero_grad();
     int row = 0;
 #pragma omp parallel for schedule(static)
@@ -91,12 +99,14 @@ void SparseMatmul::backward() {
         for(int thread = 0; thread < omp_get_num_threads(); thread++)
             b->grad[i] += b->local_grad[thread][i];
 #endif
+    timer_stop(TMR_SPMATMUL_BW);
 }
 
 GraphSum::GraphSum(Variable *in, Variable *out, SparseIndex *graph, int dim) :
         in(in), out(out), graph(graph), dim(dim) {}
 
 void GraphSum::forward(bool training) {
+    timer_start(TMR_GRAPHSUM_FW);
     out->zero();
 #pragma omp parallel for schedule(static)
     for (int src = 0; src < graph->indptr.size() - 1; src++)
@@ -112,9 +122,11 @@ void GraphSum::forward(bool training) {
                 // This only works for undirected graphs. Should be out[dst] += coef * in[src]
                 out->data[src * dim + j] += coef * in->data[dst * dim + j];
         }
+    timer_stop(TMR_GRAPHSUM_FW);
 }
 
 void GraphSum::backward() {
+    timer_start(TMR_GRAPHSUM_BW);
     in->zero_grad();
 #pragma omp parallel for schedule(static)
     for (int src = 0; src < graph->indptr.size() - 1; src++)
@@ -129,12 +141,14 @@ void GraphSum::backward() {
             for (int j = 0; j < dim; j++)
                 in->grad[src * dim + j] += coef * out->grad[dst * dim + j];
         }
+    timer_stop(TMR_GRAPHSUM_BW);
 }
 
 CrossEntropyLoss::CrossEntropyLoss(Variable *logits, int *truth, float *loss, int num_classes) :
         logits(logits), truth(truth), loss(loss), num_classes(num_classes) {}
 
 void CrossEntropyLoss::forward(bool training) {
+    timer_start(TMR_LOSS_FW);
     float total_loss = 0;
     int count = 0;
     if (training) logits->zero_grad();
@@ -178,6 +192,7 @@ void CrossEntropyLoss::forward(bool training) {
 #endif
         for (int i = 0; i < logits->grad.size(); i++)
             logits->grad[i] /= count;
+    timer_stop(TMR_LOSS_FW);
 }
 
 void CrossEntropyLoss::backward() {
@@ -193,6 +208,7 @@ ReLU::~ReLU() {
 }
 
 void ReLU::forward(bool training) {
+    timer_start(TMR_RELU_FW);
 #ifdef SIMD
 #pragma omp parallel for simd schedule(static)
 #else
@@ -203,9 +219,11 @@ void ReLU::forward(bool training) {
         if (training) mask[i] = keep;
         if (!keep) in->data[i] = 0;
     }
+    timer_stop(TMR_RELU_FW);
 }
 
 void ReLU::backward() {
+    timer_start(TMR_RELU_BW);
 #ifdef SIMD
 #pragma omp parallel for simd schedule(static)
 #else
@@ -213,6 +231,7 @@ void ReLU::backward() {
 #endif
     for (int i = 0; i < in->data.size(); i++)
         if (!mask[i]) in->grad[i] = 0;
+    timer_stop(TMR_RELU_BW);
 }
 
 Dropout::Dropout(Variable *in, float p) {
@@ -228,6 +247,7 @@ Dropout::~Dropout() {
 
 void Dropout::forward(bool training) {
     if (!training) return;
+    timer_start(TMR_DROPOUT_FW);
     const int threshold = int(p * RAND_MAX);
     float scale = 1 / (1 - p);
 
@@ -253,10 +273,12 @@ void Dropout::forward(bool training) {
             if (mask) mask[i] = keep;
         }
 #endif
+    timer_stop(TMR_DROPOUT_FW);
 }
 
 void Dropout::backward() {
     if (!mask) return;
+    timer_start(TMR_DROPOUT_BW);
     float scale = 1 / (1 - p);
 #ifdef SIMD
 #pragma omp parallel for simd schedule(static)
@@ -265,4 +287,5 @@ void Dropout::backward() {
 #endif
     for (int i = 0; i < in->data.size(); i++)
         in->grad[i] *= mask[i] ? scale : 0;
+    timer_stop(TMR_DROPOUT_BW);
 }

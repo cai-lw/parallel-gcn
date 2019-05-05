@@ -157,13 +157,11 @@ void GCN::run() {
     std::vector<float> loss_history;
     for(; epoch <= params.epochs; epoch++) {
         float train_loss, train_acc, val_loss, val_acc;
-        START_CLOCK(train);
+        timer_start(TMR_TRAIN);
         std::tie(train_loss, train_acc) = train_epoch();
         std::tie(val_loss, val_acc) = eval(2);
-        float elapsed = GET_CLOCK(train);
-        total_time += elapsed;
         printf("epoch=%d train_loss=%.5f train_acc=%.5f val_loss=%.5f val_acc=%.5f time=%.5f\n",
-            epoch, train_loss, train_acc, val_loss, val_acc, elapsed);
+            epoch, train_loss, train_acc, val_loss, val_acc, timer_stop(TMR_TRAIN));
         loss_history.push_back(val_loss);
         if(params.early_stopping > 0 && epoch >= params.early_stopping) {
             float recent_loss = 0.0;
@@ -175,11 +173,22 @@ void GCN::run() {
             }
         }
     }
-    printf("Average time per epoch: %.5fs\n", total_time / std::min(epoch, params.epochs));
+    PRINT_TIMER_AVERAGE(TMR_TRAIN);
+    PRINT_TIMER_AVERAGE(TMR_MATMUL_FW);
+    PRINT_TIMER_AVERAGE(TMR_MATMUL_BW);
+    PRINT_TIMER_AVERAGE(TMR_SPMATMUL_FW);
+    PRINT_TIMER_AVERAGE(TMR_SPMATMUL_BW);
+    PRINT_TIMER_AVERAGE(TMR_GRAPHSUM_FW);
+    PRINT_TIMER_AVERAGE(TMR_GRAPHSUM_BW);
+    PRINT_TIMER_AVERAGE(TMR_RELU_FW);
+    PRINT_TIMER_AVERAGE(TMR_RELU_BW);
+    PRINT_TIMER_AVERAGE(TMR_DROPOUT_FW);
+    PRINT_TIMER_AVERAGE(TMR_DROPOUT_BW);
+    PRINT_TIMER_AVERAGE(TMR_LOSS_FW);
+    
 
     float test_loss, test_acc;
-    START_CLOCK(test);
+    timer_start(TMR_TEST);
     std::tie(test_loss, test_acc) = eval(3);
-    float elapsed = GET_CLOCK(test);
-    printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, elapsed);
+    printf("test_loss=%.5f test_acc=%.5f time=%.5f\n", test_loss, test_acc, timer_stop(TMR_TEST));
 }

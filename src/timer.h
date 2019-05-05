@@ -1,14 +1,29 @@
 #ifndef TIMER_H
 #include <chrono>
+#include <vector>
 
-#define START_CLOCK(X) auto __timer_t0_##X = std::chrono::high_resolution_clock::now();
-#define GET_CLOCK(X) std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::high_resolution_clock::now() - __timer_t0_##X).count()
+typedef enum {
+    TMR_TRAIN = 0,
+    TMR_TEST,
+    TMR_MATMUL_FW,
+    TMR_MATMUL_BW,
+    TMR_SPMATMUL_FW,
+    TMR_SPMATMUL_BW,
+    TMR_GRAPHSUM_FW,
+    TMR_GRAPHSUM_BW,
+    TMR_LOSS_FW,
+    TMR_RELU_FW,
+    TMR_RELU_BW,
+    TMR_DROPOUT_FW,
+    TMR_DROPOUT_BW,
+    __NUM_TMR
+} timer_t;
 
-#ifdef debug
-#define PRINT_CLOCK(X) fprintf(stderr, #X " took %f ms\n", GET_CLOCK(X) * 1000);
-#else
-#define PRINT_CLOCK(X)
-#endif
+void timer_start(timer_t t);
+float timer_stop(timer_t t);
+float timer_average(timer_t t);
+
+#define PRINT_TIMER_AVERAGE(T) printf(#T " average time: %.5fs\n", timer_average(T))
 
 #define TIMER_H
 #endif
